@@ -3,7 +3,6 @@
 import sys
 import math as m
 from itertools import cycle
-from typing import Set
 
 from PyQt5.QtCore import (QRectF, QSize, QTimer, Qt,QRect, QPointF)
 from PyQt5.QtGui import (QBrush, QColor, QPainter, QImage)
@@ -90,7 +89,25 @@ class BoardView(QGraphicsView):
         self.setScene(self.scene)
         self.drawGrid()
         self.insertPieces()
-        
+
+    def drawGrid(self) -> None:
+        """function is too long need to import initial settings
+        allow change of fill color parameters"""
+        self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
+        pen = QPen(QColor(0,0,0), 3, Qt.SolidLine)
+        red_fill = QColor(255,0,0)
+        black_fill = QColor(0,0,0)
+        fill_color = cycle([black_fill, red_fill])
+
+        for x in range(0,Settings.NUM_BLOCKS_X): 
+            """xo and yo are origin coordinates to draw each rectangle"""
+            xo = x * Settings.WIDTH 
+            color = next(fill_color)
+            for y in range(0,Settings.NUM_BLOCKS_Y):
+                color = next(fill_color)
+                yo = y * Settings.WIDTH
+                self.lines.append(self.scene.addRect(xo,yo,Settings.WIDTH,Settings.WIDTH,pen, color))
+            
     def insertPieces(self):
         """refactor this """
         opp_color = QColor(0,0,255)  
@@ -129,24 +146,6 @@ class BoardView(QGraphicsView):
                     self.scene.addItem(checkerPiece)
                     self.piece_list.append(checkerPiece)  
 
-    def drawGrid(self) -> None:
-        """function is too long need to import initial settings
-        allow change of fill color parameters"""
-        self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
-        pen = QPen(QColor(0,0,0), 3, Qt.SolidLine)
-        red_fill = QColor(255,0,0)
-        black_fill = QColor(0,0,0)
-        fill_color = cycle([black_fill, red_fill])
-
-        for x in range(0,Settings.NUM_BLOCKS_X): 
-            """xo and yo are origin coordinates to draw each rectangle"""
-            xo = x * Settings.WIDTH 
-            color = next(fill_color)
-            for y in range(0,Settings.NUM_BLOCKS_Y):
-                color = next(fill_color)
-                yo = y * Settings.WIDTH
-                self.lines.append(self.scene.addRect(xo,yo,Settings.WIDTH,Settings.WIDTH,pen, color))
-            
     def set_visible(self,visible=True) -> None:
         for line in self.lines:
             line.setVisible(visible)
