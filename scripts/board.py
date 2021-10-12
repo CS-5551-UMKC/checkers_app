@@ -60,14 +60,6 @@ class CheckerPiece(QGraphicsObject):
         location = self.getRowCol(self.pos().x(), self.pos().y())
         self.scene().pieceSelected.emit(location, self.playerorAI)
         
-    def mouseMoveEvent(self, event):
-        orig_cursor_position = event.lastScenePos()
-        updated_cursor_position = event.scenePos()
-        orig_position = self.scenePos()
-        updated_cursor_x = updated_cursor_position.x() - orig_cursor_position.x() + orig_position.x()
-        updated_cursor_y = updated_cursor_position.y() - orig_cursor_position.y() + orig_position.y()
-        self.setPos(QPointF(updated_cursor_x, updated_cursor_y))
-
 class GraphicsScene(QGraphicsScene):
     pieceSelected = pyqtSignal(object,object)
 
@@ -78,7 +70,7 @@ class BoardView(QGraphicsView):
         #scene view -> scene -> items
         self.setParams()
         self.initBoard()
-        self.scene.pieceSelected.connect(self.findLegalMoves)
+        self.scene.pieceSelected.connect(self.findMoves)
 
     def setParams(self):
         self.piece_list = [] #checkerpieces
@@ -87,22 +79,31 @@ class BoardView(QGraphicsView):
         self.size = min(self.width(), self.height())
         self.scene = GraphicsScene()
 
-    def findLegalMoves(self,current_loc, player_or_opp):
+    def initBoard(self):
+        self.mapToScene(QRect(0, 0, self.size, self.size))
+        self.setScene(self.scene)
+        self.drawBoard()
+        self.insertPieces()
+
+    def findMoves(self,current_loc, player_or_opp):
         """indicate the possible legal moves the checkerpiece can make
-        based on its location, check if black or red"""
-        print("item is:", current_loc, player_or_opp)
+        based on its location, check if black or red
+        current_loc = int [row, col] --> [y,x] location on board
+        player_or_opp = string input of Opponent or Player
         """
-        make sure moves are diagonal
-        make sure moves are not out of bounds 
-        make sure moves are within bounds
-        make sure moves are not horizontal or vertical
+        
+
+        """
+        make sure moves are diagonal - X
+        make sure moves are not out of bounds -X 
+        make sure moves are within bounds - X
+        make sure moves are not horizontal or vertical -X
         if king you can go backwards or forwards diagonlly, if regular only forward
         """
         #show all moves
         #then move any that are not legal
         #then show on board
-
-        #if opponent row goes down 
+        #if opponent row goes down so we add  
         if player_or_opp == "Opponent":
             leg_move_1 = [current_loc[0] + 1, current_loc[1]-1] #move left
             leg_move_2 = [current_loc[0] + 1, current_loc[1]+1] #move right
@@ -119,13 +120,13 @@ class BoardView(QGraphicsView):
             leg_move_2 = [current_loc[0] - 1, current_loc[1]+1] #move right
             moves_list = [leg_move_1, leg_move_2]
             for index, moves in enumerate(moves_list):
-                print(moves[0])
                 if (moves[0] <= -1) or (moves[0]>=8) or (moves[1] <= -1) or (moves[1]>=8):
                     print("removing", moves)
                     moves_list.pop(index)
-        self.showLegalMoves(moves_list)
-        #return legal_moves
-    
+        
+        legal_moves = moves_list
+        self.showLegalMoves(legal_moves)
+
     def showLegalMoves(self, legal_moves):
         """paint a circle to show possible legal moves in scene of board"""
         pen = QPen(QColor(0,0,0), 3, Qt.SolidLine)
@@ -134,9 +135,8 @@ class BoardView(QGraphicsView):
             #print("moves", moves)
             xo = moves[1] * Settings.WIDTH #pixel location
             yo = moves[0] * Settings.WIDTH #pixel location
-            print(xo,yo)
             (self.scene.addEllipse(xo,yo,Settings.WIDTH,Settings.WIDTH,pen,fill))
-    
+        
     def resizeEvent(self, event) -> None:
         """resize and draw checkerboard"""
         print("updating")
@@ -147,12 +147,6 @@ class BoardView(QGraphicsView):
 
     def sizesHint(self):
         return QSize(Settings.BOARD_SIZE, Settings.BOARD_SIZE)
-
-    def initBoard(self):
-        self.mapToScene(QRect(0, 0, self.size, self.size))
-        self.setScene(self.scene)
-        self.drawGrid()
-        self.insertPieces()
 
     def insertPieces(self):
         """refactor this """
@@ -193,7 +187,7 @@ class BoardView(QGraphicsView):
                     self.scene.addItem(checkerPiece)
                     self.piece_list.append(checkerPiece)  
                     
-    def drawGrid(self) -> None:
+    def drawBoard(self) -> None:
         """function is too long need to import initial settings
         allow change of fill color parameters"""
         self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
