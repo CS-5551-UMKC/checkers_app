@@ -3,13 +3,14 @@
 import sys
 import math as m
 from itertools import cycle
+from typing import Set
 
-from PyQt5.QtCore import (QRectF, QSize, QTimer, Qt,QRect, QPointF)
+from PyQt5.QtCore import (QRectF, QSize, QTimer, Qt,QRect, QPointF,pyqtSignal, pyqtSlot)
 from PyQt5.QtGui import (QBrush, QColor, QPainter, QImage)
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QWidget, QGraphicsEllipseItem,
                             QHBoxLayout, QGraphicsScene, QTableWidget,
                              QGraphicsView, QMainWindow, QPushButton,
-                             QGraphicsItem)
+                             QGraphicsObject)
 
 from PyQt5.QtGui import QPen, QBrush
 
@@ -22,14 +23,15 @@ class Settings():
     NUM_BLOCKS_Y = 8 #index at 0
     BOARD_SIZE = WIDTH*NUM_BLOCKS_X
 
-class CheckerPiece(QGraphicsItem):
-    def __init__(self,color):
+class CheckerPiece(QGraphicsObject):
+    def __init__(self,color, player_or_opp):
         super().__init__(parent = None)
-        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        self.setFlag(QGraphicsObject.ItemIsSelectable, True)
         #self.color = QColor(255,0,0)
         self.color = color
         self.setAcceptHoverEvents(True)
-
+        self.playerorAI = player_or_opp #string if it is a player or opponenet 
+    
     # mouse hover event
     def hoverEnterEvent(self, event):
         app.instance().setOverrideCursor(Qt.OpenHandCursor)
@@ -45,51 +47,152 @@ class CheckerPiece(QGraphicsItem):
     def boundingRect(self):
         return QRectF(0, 0, Settings.WIDTH, Settings.WIDTH)
 
+    def getRowCol(self, x, y):
+        """returns location of checkerpiece from pixel location
+        keep in mind x pixel is the column location and y pixel is the row position"""
+        self.col = m.floor(x/Settings.WIDTH)
+        self.row = m.floor(y/Settings.WIDTH) 
+        return [self.row, self.col]
+
     # mouse click event
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
-        orig_cursor_position = event.lastScenePos()
-        updated_cursor_position = event.scenePos()
-        print("original and updated:", orig_cursor_position, updated_cursor_position)
-
+        location = self.getRowCol(self.pos().x(), self.pos().y())
+        self.scene().pieceSelected.emit(location, self.playerorAI)
+        
     def mouseMoveEvent(self, event):
         orig_cursor_position = event.lastScenePos()
         updated_cursor_position = event.scenePos()
-        #print("original and updated:", orig_cursor_position, updated_cursor_position)
-
         orig_position = self.scenePos()
         updated_cursor_x = updated_cursor_position.x() - orig_cursor_position.x() + orig_position.x()
         updated_cursor_y = updated_cursor_position.y() - orig_cursor_position.y() + orig_position.y()
         self.setPos(QPointF(updated_cursor_x, updated_cursor_y))
 
-    def mouseReleaseEvent(self, event):
-        print('x: {0}, y: {1}'.format(self.pos().x(), self.pos().y()))
+class GraphicsScene(QGraphicsScene):
+    pieceSelected = pyqtSignal(object,object)
 
 class BoardView(QGraphicsView):
     def __init__(self):
         #super(View, self).__init__(parent)
         super().__init__()
         #scene view -> scene -> items
+        self.setParams()
+        self.initBoard()
+        self.scene.pieceSelected.connect(self.findLegalMoves)
+
+    def setParams(self):
         self.piece_list = [] #checkerpieces
         self.lines = [] #rectangle lines
         self.set_opacity(0.3)
         self.size = min(self.width(), self.height())
-        
+        self.scene = GraphicsScene()
+
+    def findLegalMoves(self,current_loc, player_or_opp):
+        """indicate the possible legal moves the checkerpiece can make
+        based on its location, check if black or red"""
+        print("item is:", current_loc, player_or_opp)
+        """
+        make sure moves are diagonal
+        make sure moves are not out of bounds 
+        make sure moves are within bounds
+        make sure moves are not horizontal or vertical
+        if king you can go backwards or forwards diagonlly, if regular only forward
+        """
+        #show all moves
+        #then move any that are not legal
+        #then show on board
+
+        #if opponent row goes down 
+        if player_or_opp == "Opponent":
+            leg_move_1 = [current_loc[0] + 1, current_loc[1]-1] #move left
+            leg_move_2 = [current_loc[0] + 1, current_loc[1]+1] #move right
+            moves_list = [leg_move_1, leg_move_2]
+            #legal_moves = [lst for lst in moves if (lst[moves]<=0 or lst[moves]>=7) in lst]
+            for index, moves in enumerate(moves_list):
+                print(moves[0])
+                if (moves[0] <= -1) or (moves[0]>=8) or (moves[1] <= -1) or (moves[1]>=8):
+                    print("removing", moves)
+                    moves_list.pop(index)
+        #other wise it is a player
+        else:
+            leg_move_1 = [current_loc[0] - 1, current_loc[1]-1] #move left subtract instead
+            leg_move_2 = [current_loc[0] - 1, current_loc[1]+1] #move right
+            moves_list = [leg_move_1, leg_move_2]
+            for index, moves in enumerate(moves_list):
+                print(moves[0])
+                if (moves[0] <= -1) or (moves[0]>=8) or (moves[1] <= -1) or (moves[1]>=8):
+                    print("removing", moves)
+                    moves_list.pop(index)
+        self.showLegalMoves(moves_list)
+        #return legal_moves
+    
+    def showLegalMoves(self, legal_moves):
+        """paint a circle to show possible legal moves in scene of board"""
+        pen = QPen(QColor(0,0,0), 3, Qt.SolidLine)
+        fill = QColor(0,255,0)
+        for moves in legal_moves:
+            #print("moves", moves)
+            xo = moves[1] * Settings.WIDTH #pixel location
+            yo = moves[0] * Settings.WIDTH #pixel location
+            print(xo,yo)
+            (self.scene.addEllipse(xo,yo,Settings.WIDTH,Settings.WIDTH,pen,fill))
+    
+    def resizeEvent(self, event) -> None:
+        """resize and draw checkerboard"""
+        print("updating")
+        self.scene.update(0, 0, self.size, self.size)
+
     def minimumSizeHint(self):
         return QSize(800, 800)
 
     def sizesHint(self):
-        return QSize(1280, 720)
+        return QSize(Settings.BOARD_SIZE, Settings.BOARD_SIZE)
 
-    def resizeEvent(self, event) -> None:
-        """resize and draw checkerboard"""
-        self.scene = QGraphicsScene()
+    def initBoard(self):
         self.mapToScene(QRect(0, 0, self.size, self.size))
-
         self.setScene(self.scene)
         self.drawGrid()
         self.insertPieces()
 
+    def insertPieces(self):
+        """refactor this """
+        opp_color = QColor(0,0,255)  
+        for x in range(0,3): 
+            xo = x * Settings.WIDTH 
+            if (x % 2) != 0:
+                for y in range(0,Settings.NUM_BLOCKS_Y,2):
+                    yo = y * Settings.HEIGHT
+                    checkerPiece = CheckerPiece(opp_color, "Opponent")
+                    checkerPiece.setPos(yo,xo)
+                    self.scene.addItem(checkerPiece)
+                    self.piece_list.append(checkerPiece)  
+            else:
+                for y in range(1,Settings.NUM_BLOCKS_Y,2):
+                    yo = y * Settings.HEIGHT
+                    checkerPiece = CheckerPiece(opp_color, "Opponent")
+                    checkerPiece.setPos(yo,xo)
+                    self.scene.addItem(checkerPiece)
+                    self.piece_list.append(checkerPiece)  
+
+        player_color = QColor(255,0,0)
+        for x in range(5,8): 
+            xo = x * Settings.WIDTH 
+            print(xo)
+            if (x % 2) != 0:
+                for y in range(0,Settings.NUM_BLOCKS_Y,2):
+                    yo = y * Settings.HEIGHT
+                    checkerPiece = CheckerPiece(player_color, "Player")
+                    checkerPiece.setPos(yo,xo)
+                    self.scene.addItem(checkerPiece)
+                    self.piece_list.append(checkerPiece)  
+            else:
+                for y in range(1,Settings.NUM_BLOCKS_Y,2):
+                    yo = y * Settings.HEIGHT
+                    checkerPiece = CheckerPiece(player_color, "Player")
+                    checkerPiece.setPos(yo,xo)
+                    self.scene.addItem(checkerPiece)
+                    self.piece_list.append(checkerPiece)  
+                    
     def drawGrid(self) -> None:
         """function is too long need to import initial settings
         allow change of fill color parameters"""
@@ -108,44 +211,6 @@ class BoardView(QGraphicsView):
                 yo = y * Settings.WIDTH
                 self.lines.append(self.scene.addRect(xo,yo,Settings.WIDTH,Settings.WIDTH,pen, color))
             
-    def insertPieces(self):
-        """refactor this """
-        opp_color = QColor(0,0,255)  
-        for x in range(0,3): 
-            xo = x * Settings.WIDTH 
-            if (x % 2) != 0:
-                for y in range(0,Settings.NUM_BLOCKS_Y,2):
-                    yo = y * Settings.HEIGHT
-                    checkerPiece = CheckerPiece(opp_color)
-                    checkerPiece.setPos(yo,xo)
-                    self.scene.addItem(checkerPiece)
-                    self.piece_list.append(checkerPiece)  
-            else:
-                for y in range(1,Settings.NUM_BLOCKS_Y,2):
-                    yo = y * Settings.HEIGHT
-                    checkerPiece = CheckerPiece(opp_color)
-                    checkerPiece.setPos(yo,xo)
-                    self.scene.addItem(checkerPiece)
-                    self.piece_list.append(checkerPiece)  
-
-        player_color = QColor(255,0,0)
-        for x in range(5,8): 
-            xo = x * Settings.WIDTH 
-            if (x % 2) != 0:
-                for y in range(0,Settings.NUM_BLOCKS_Y,2):
-                    yo = y * Settings.HEIGHT
-                    checkerPiece = CheckerPiece(player_color)
-                    checkerPiece.setPos(yo,xo)
-                    self.scene.addItem(checkerPiece)
-                    self.piece_list.append(checkerPiece)  
-            else:
-                for y in range(1,Settings.NUM_BLOCKS_Y,2):
-                    yo = y * Settings.HEIGHT
-                    checkerPiece = CheckerPiece(player_color)
-                    checkerPiece.setPos(yo,xo)
-                    self.scene.addItem(checkerPiece)
-                    self.piece_list.append(checkerPiece)  
-
     def set_visible(self,visible=True) -> None:
         for line in self.lines:
             line.setVisible(visible)
@@ -153,18 +218,6 @@ class BoardView(QGraphicsView):
     def set_opacity(self,opacity) -> None:
         for line in self.lines:
             line.setOpacity(opacity)
-
-    def mousePressEvent(self, event) -> None:
-        """detect grid location of mouse press event"""
-        x = event.pos().x() 
-        y = event.pos().y() 
-        pass
-
-class BoardController(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.boardview = BoardView()
-        self.boardview.draw_grid()
 
 class CheckersAPP(QMainWindow):
     def __init__(self):
