@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 
+import unittest
 import sys
 import math as m
 import numpy as np
 
-class CheckerPieceTest():
+class CheckerPiece():
     def __init__(self,color, player_or_opp, row_indx, col_indx):
         self.color = color #string red or black
         self.player_or_opp = player_or_opp
         self.loc = [row_indx, col_indx] #[row,col]
 
-class BoardTest():
+class Board():
     def __init__(self, row_size, col_size):
         self.board = self.drawBoard(row_size, col_size)
 
@@ -25,10 +26,10 @@ class BoardTest():
         if (row_size<0 or row_size>7) or (col_size<0 or col_size>7):
             return False
         else:
-            return True 
+            return True
 
-    def placePiece(self,color,opp_or_ply, row_loc, col_loc):
-        piece = CheckerPieceTest(color, opp_or_ply, row_loc, col_loc)
+    def placePiece(self, row_loc, col_loc):
+        piece = CheckerPiece("black", "Opponent", row_loc, col_loc)
         self.board[row_loc, col_loc] = 1
         print(self.board)
         return piece
@@ -73,11 +74,33 @@ class BoardTest():
         print("moves are",legal_moves)
         return legal_moves
 
+class TestBoardSize(unittest.TestCase):
+    #AC 3.1 Board size is valid | Assert true
+    def test_valid_board(self):
+        boardTest = Board(7,7)
+        self.assertTrue(boardTest.isBoardSizeValid(7,7))
+    #AC 3.2 Board size is invalid (row) | Assert false
+    def test_invalid_row(self):
+        boardTest = Board(7,8)
+        self.assertFalse(boardTest.isBoardSizeValid(7,8))
+    #AC 3.3 Board size is invalid (column) | Assert false
+    def test_invalid_col(self):
+        boardTest = Board(8,7)
+        self.assertFalse(boardTest.isBoardSizeValid(8,7))
+
+class TestPiece(unittest.TestCase):
+    #AC 4.1 Piece placed legally | Assert equal for piece attributes
+    def test_valid_piece(self):
+        boardTest = Board(7,7)
+        oponent = boardTest.placePiece(2,1)
+        self.assertEqual(oponent.color, "black")
+        self.assertEqual(oponent.player_or_opp, "Opponent")
+        self.assertEqual(oponent.loc, [2,1])
+
+
 if __name__ =='__main__':
-    #AC 3.1 Board size is good assert true
-    boardTest = BoardTest(7,7) #
-    opponent_pieceTest = boardTest.placePiece("black", "Opponent", 2,1)
+    unittest.main()
+    boardTest = Board(7,7)
+    opponent_pieceTest = boardTest.placePiece(2,1)
     legal_moves = boardTest.findMoves(opponent_pieceTest.loc, opponent_pieceTest.player_or_opp)
     print(legal_moves)
-
-    #AC 3.2 Board size is bad 
