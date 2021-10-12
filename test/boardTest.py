@@ -27,8 +27,8 @@ class BoardTest():
         else:
             return True 
 
-    def placePiece(self, row_loc, col_loc):
-        piece = CheckerPieceTest("black", "Opponent", row_loc, col_loc)
+    def placePiece(self,color,opp_or_ply, row_loc, col_loc):
+        piece = CheckerPieceTest(color, opp_or_ply, row_loc, col_loc)
         self.board[row_loc, col_loc] = 1
         print(self.board)
         return piece
@@ -74,7 +74,10 @@ class BoardTest():
         return legal_moves
 
 if __name__ =='__main__':
-    boardTest = BoardTest(7,7)
-    opponent_pieceTest = boardTest.placePiece(2,1)
+    #AC 3.1 Board size is good assert true
+    boardTest = BoardTest(7,7) #
+    opponent_pieceTest = boardTest.placePiece("black", "Opponent", 2,1)
     legal_moves = boardTest.findMoves(opponent_pieceTest.loc, opponent_pieceTest.player_or_opp)
     print(legal_moves)
+
+    #AC 3.2 Board size is bad 
