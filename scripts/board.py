@@ -3,7 +3,6 @@
 import sys
 import math as m
 from itertools import cycle
-from typing import Set
 
 from PyQt5.QtCore import (QRectF, QSize, QTimer, Qt,QRect, QPointF,pyqtSignal, pyqtSlot)
 from PyQt5.QtGui import (QBrush, QColor, QPainter, QImage)
@@ -13,6 +12,10 @@ from PyQt5.QtWidgets import (QApplication, QGridLayout, QWidget, QGraphicsEllips
                              QGraphicsObject)
 
 from PyQt5.QtGui import QPen, QBrush
+
+"""Board and Piece implmentation 
+Justin Nguyen
+"""
 
 """settings and params"""
 class Settings():

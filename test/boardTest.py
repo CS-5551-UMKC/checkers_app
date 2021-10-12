@@ -3,18 +3,6 @@
 import sys
 import math as m
 import numpy as np
-from itertools import cycle
-from typing import Set
-
-from PyQt5.QtCore import (QRectF, QSize, QTimer, Qt,QRect, QPointF,pyqtSignal, pyqtSlot)
-from PyQt5.QtGui import (QBrush, QColor, QPainter, QImage)
-from PyQt5.QtWidgets import (QApplication, QGridLayout, QWidget, QGraphicsEllipseItem,
-                            QHBoxLayout, QGraphicsScene, QTableWidget,
-                             QGraphicsView, QMainWindow, QPushButton,
-                             QGraphicsObject)
-
-from PyQt5.QtGui import QPen, QBrush
-
 
 class CheckerPieceTest():
     def __init__(self,color, player_or_opp, row_indx, col_indx):
