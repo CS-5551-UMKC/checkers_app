@@ -92,10 +92,10 @@ class TestPiece(unittest.TestCase):
     #AC 4.1 Piece placed legally | Assert equal for piece attributes
     def test_valid_piece(self):
         boardTest = Board(7,7)
-        oponent = boardTest.placePiece(2,1)
-        self.assertEqual(oponent.color, "black")
-        self.assertEqual(oponent.player_or_opp, "Opponent")
-        self.assertEqual(oponent.loc, [2,1])
+        opponent = boardTest.placePiece(2,1)
+        self.assertEqual(opponent.color, "black")
+        self.assertEqual(opponent.player_or_opp, "Opponent")
+        self.assertEqual(opponent.loc, [2,1])
 
 
 if __name__ =='__main__':

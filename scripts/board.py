@@ -63,30 +63,97 @@ class CheckerPiece(QGraphicsObject):
         location = self.getRowCol(self.pos().x(), self.pos().y())
         self.scene().pieceSelected.emit(location, self.playerorAI)
         
-class GraphicsScene(QGraphicsScene):
+class BoardView(QGraphicsScene):
     pieceSelected = pyqtSignal(object,object)
-
-class BoardView(QGraphicsView):
+    
     def __init__(self):
-        #super(View, self).__init__(parent)
         super().__init__()
-        #scene view -> scene -> items
-        self.setParams()
-        self.initBoard()
+        self.grid_lines = []
+        #self.piece_list = []
+        
+    def drawBoard(self) -> None:
+        """function is too long need to import initial settings
+        allow change of fill color parameters"""
+        pen = QPen(QColor(0,0,0), 3, Qt.SolidLine)
+        red_fill = QColor(255,0,0)
+        black_fill = QColor(0,0,0)
+        fill_color = cycle([black_fill, red_fill])
+        grid_loc = []
+        for x in range(0,Settings.NUM_BLOCKS_X): 
+            """xo and yo are origin coordinates to draw each rectangle"""
+            xo = x * Settings.WIDTH 
+            color = next(fill_color)
+            for y in range(0,Settings.NUM_BLOCKS_Y):
+                color = next(fill_color)
+                yo = y * Settings.WIDTH
+                self.grid_lines.append(self.addRect(xo,yo,Settings.WIDTH,Settings.WIDTH,pen, color))
+                coords = [xo,yo]
+                grid_loc.append(coords)
+
+        return grid_loc
+
+    def set_visible(self,visible=True) -> None:
+        for line in self.grid_lines:
+            line.setVisible(visible)
+
+    def set_opacity(self,opacity) -> None:
+        for line in self.grid_lines:
+            line.setOpacity(opacity)
+
+    def drawPieces(self, player_or_opp):
+        """draw checker pieces based on whether it is a player or opponent """
+        piece_loc = []
+        if player_or_opp == "Opponent":
+            color = QColor(0,0,255)
+            init_range = 0
+            final_range = 3
+        else: 
+            color = QColor(255,0,0)
+            init_range = 5
+            final_range = 8
+  
+        for x in range(init_range, final_range): 
+            xo = x * Settings.WIDTH 
+            if (x % 2) != 0:
+                for y in range(0,Settings.NUM_BLOCKS_Y,2):
+                    yo = y * Settings.HEIGHT
+                    checkerPiece = CheckerPiece(color, player_or_opp)
+                    checkerPiece.setPos(yo,xo)
+                    self.addItem(checkerPiece)
+                    piece_loc.append(checkerPiece)
+                    #self.piece_list.append(checkerPiece)  
+            else:
+                for y in range(1,Settings.NUM_BLOCKS_Y,2):
+                    yo = y * Settings.HEIGHT
+                    checkerPiece = CheckerPiece(color, player_or_opp)
+                    checkerPiece.setPos(yo,xo)
+                    self.addItem(checkerPiece)
+                    piece_loc.append(checkerPiece)  
+
+        return piece_loc
+
+class BoardController(QGraphicsView):
+    """
+    Board View draws the visual aspects fo the board 
+    """
+    def __init__(self):
+        super().__init__()
+        #self.set_opacity(0.3)
+        self.size = min(self.width(), self.height())
+        self.visualizeBoard()
+        self.visualizePiece()
         self.scene.pieceSelected.connect(self.findMoves)
 
-    def setParams(self):
-        self.piece_list = [] #checkerpieces
-        self.lines = [] #rectangle lines
-        self.set_opacity(0.3)
-        self.size = min(self.width(), self.height())
-        self.scene = GraphicsScene()
-
-    def initBoard(self):
+    def visualizeBoard(self):
+        self.scene = BoardView()
         self.mapToScene(QRect(0, 0, self.size, self.size))
         self.setScene(self.scene)
-        self.drawBoard()
-        self.insertPieces()
+        self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
+        self.grid_loc = self.scene.drawBoard()
+        
+    def visualizePiece(self):
+        self.opp_pieces = self.scene.drawPieces("Opponent")
+        self.player_pieces = self.scene.drawPieces("Player")
 
     def findMoves(self,current_loc, player_or_opp):
         """indicate the possible legal moves the checkerpiece can make
@@ -94,7 +161,6 @@ class BoardView(QGraphicsView):
         current_loc = int [row, col] --> [y,x] location on board
         player_or_opp = string input of Opponent or Player
         """
-        
 
         """
         make sure moves are diagonal - X
@@ -139,82 +205,6 @@ class BoardView(QGraphicsView):
             xo = moves[1] * Settings.WIDTH #pixel location
             yo = moves[0] * Settings.WIDTH #pixel location
             (self.scene.addEllipse(xo,yo,Settings.WIDTH,Settings.WIDTH,pen,fill))
-        
-    def resizeEvent(self, event) -> None:
-        """resize and draw checkerboard"""
-        print("updating")
-        self.scene.update(0, 0, self.size, self.size)
-
-    def minimumSizeHint(self):
-        return QSize(800, 800)
-
-    def sizesHint(self):
-        return QSize(Settings.BOARD_SIZE, Settings.BOARD_SIZE)
-
-    def insertPieces(self):
-        """refactor this """
-        opp_color = QColor(0,0,255)  
-        for x in range(0,3): 
-            xo = x * Settings.WIDTH 
-            if (x % 2) != 0:
-                for y in range(0,Settings.NUM_BLOCKS_Y,2):
-                    yo = y * Settings.HEIGHT
-                    checkerPiece = CheckerPiece(opp_color, "Opponent")
-                    checkerPiece.setPos(yo,xo)
-                    self.scene.addItem(checkerPiece)
-                    self.piece_list.append(checkerPiece)  
-            else:
-                for y in range(1,Settings.NUM_BLOCKS_Y,2):
-                    yo = y * Settings.HEIGHT
-                    checkerPiece = CheckerPiece(opp_color, "Opponent")
-                    checkerPiece.setPos(yo,xo)
-                    self.scene.addItem(checkerPiece)
-                    self.piece_list.append(checkerPiece)  
-
-        player_color = QColor(255,0,0)
-        for x in range(5,8): 
-            xo = x * Settings.WIDTH 
-            print(xo)
-            if (x % 2) != 0:
-                for y in range(0,Settings.NUM_BLOCKS_Y,2):
-                    yo = y * Settings.HEIGHT
-                    checkerPiece = CheckerPiece(player_color, "Player")
-                    checkerPiece.setPos(yo,xo)
-                    self.scene.addItem(checkerPiece)
-                    self.piece_list.append(checkerPiece)  
-            else:
-                for y in range(1,Settings.NUM_BLOCKS_Y,2):
-                    yo = y * Settings.HEIGHT
-                    checkerPiece = CheckerPiece(player_color, "Player")
-                    checkerPiece.setPos(yo,xo)
-                    self.scene.addItem(checkerPiece)
-                    self.piece_list.append(checkerPiece)  
-                    
-    def drawBoard(self) -> None:
-        """function is too long need to import initial settings
-        allow change of fill color parameters"""
-        self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
-        pen = QPen(QColor(0,0,0), 3, Qt.SolidLine)
-        red_fill = QColor(255,0,0)
-        black_fill = QColor(0,0,0)
-        fill_color = cycle([black_fill, red_fill])
-
-        for x in range(0,Settings.NUM_BLOCKS_X): 
-            """xo and yo are origin coordinates to draw each rectangle"""
-            xo = x * Settings.WIDTH 
-            color = next(fill_color)
-            for y in range(0,Settings.NUM_BLOCKS_Y):
-                color = next(fill_color)
-                yo = y * Settings.WIDTH
-                self.lines.append(self.scene.addRect(xo,yo,Settings.WIDTH,Settings.WIDTH,pen, color))
-            
-    def set_visible(self,visible=True) -> None:
-        for line in self.lines:
-            line.setVisible(visible)
-
-    def set_opacity(self,opacity) -> None:
-        for line in self.lines:
-            line.setOpacity(opacity)
 
 class CheckersAPP(QMainWindow):
     def __init__(self):
@@ -222,7 +212,7 @@ class CheckersAPP(QMainWindow):
         central = QWidget()
         self.setCentralWidget(central)
         layout = QHBoxLayout(central)
-        self.board = BoardView()
+        self.board = BoardController()
         layout.addWidget(self.board)
         self.table = QTableWidget(1, 3)
         layout.addWidget(self.table)
