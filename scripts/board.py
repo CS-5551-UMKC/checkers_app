@@ -30,10 +30,10 @@ class CheckerPiece(QGraphicsObject):
     def __init__(self,color, player_or_opp):
         super().__init__(parent = None)
         self.setFlag(QGraphicsObject.ItemIsSelectable, True)
-        #self.color = QColor(255,0,0)
         self.color = color
         self.setAcceptHoverEvents(True)
-        self.playerorAI = player_or_opp #string if it is a player or opponenet 
+        self.playerorAI = player_or_opp #string if it is a player or opponenet
+        self.position = [None,None] 
     
     # mouse hover event
     def hoverEnterEvent(self, event):
@@ -59,18 +59,25 @@ class CheckerPiece(QGraphicsObject):
 
     # mouse click event
     def mousePressEvent(self, event):
-        super().mousePressEvent(event)
+        super(CheckerPiece,self).mousePressEvent(event)
         location = self.getRowCol(self.pos().x(), self.pos().y())
-        self.scene().pieceSelected.emit(location, self.playerorAI)
-        
+        self.emitLocation(location)
+        self.emitPieceType()
+
+    def emitLocation(self,location):
+        self.scene().pieceSelected.emit(location)
+
+    def emitPieceType(self):
+        self.scene().pieceType.emit(self.playerorAI)
+
 class BoardView(QGraphicsScene):
-    pieceSelected = pyqtSignal(object,object)
-    
+    pieceSelected = pyqtSignal(object)
+    pieceType = pyqtSignal(str)
     def __init__(self):
         super().__init__()
+        self.setItemIndexMethod(QGraphicsScene.NoIndex)
         self.grid_lines = []
-        #self.piece_list = []
-        
+
     def drawBoard(self) -> None:
         """function is too long need to import initial settings
         allow change of fill color parameters"""
@@ -102,7 +109,7 @@ class BoardView(QGraphicsScene):
 
     def drawPieces(self, player_or_opp):
         """draw checker pieces based on whether it is a player or opponent """
-        piece_loc = []
+        checker_piece_list = []
         if player_or_opp == "Opponent":
             color = QColor(0,0,255)
             init_range = 0
@@ -120,41 +127,65 @@ class BoardView(QGraphicsScene):
                     checkerPiece = CheckerPiece(color, player_or_opp)
                     checkerPiece.setPos(yo,xo)
                     self.addItem(checkerPiece)
-                    piece_loc.append(checkerPiece)
-                    #self.piece_list.append(checkerPiece)  
+                    checkerPiece.position = checkerPiece.getRowCol(yo,xo)
+                    checker_piece_list.append(checkerPiece)  
             else:
                 for y in range(1,Settings.NUM_BLOCKS_Y,2):
                     yo = y * Settings.HEIGHT
                     checkerPiece = CheckerPiece(color, player_or_opp)
                     checkerPiece.setPos(yo,xo)
                     self.addItem(checkerPiece)
-                    piece_loc.append(checkerPiece)  
+                    checkerPiece.position = checkerPiece.getRowCol(yo,xo)
+                    checker_piece_list.append(checkerPiece)  
 
-        return piece_loc
+        return checker_piece_list
 
+    def drawLegalMoves(self, legal_moves):
+        """paint a circle to show possible legal moves in scene of board"""
+        pen = QPen(QColor(0,0,0), 3, Qt.SolidLine)
+        fill = QColor(0,255,0)
+        for moves in legal_moves:
+            #print("moves", moves)
+            xo = moves[1] * Settings.WIDTH #pixel location
+            yo = moves[0] * Settings.WIDTH #pixel location
+            (self.addEllipse(xo,yo,Settings.WIDTH,Settings.WIDTH,pen,fill))
+
+    def hideLegalmoves(self, legal_moves):
+        """remove the shown legal moves if piece is selected again"""
+
+                        
 class BoardController(QGraphicsView):
     """
-    Board View draws the visual aspects fo the board 
+    Board controller recieves the graphical scene of the board and pieces
+    not sure if I should inherit this
+    Scene inherits from View --> this is kind of dumb but we can change it 
     """
     def __init__(self):
         super().__init__()
         #self.set_opacity(0.3)
+        self.curr_piece = None
+        self.curr_loc = None
+
         self.size = min(self.width(), self.height())
         self.visualizeBoard()
         self.visualizePiece()
-        self.scene.pieceSelected.connect(self.findMoves)
+        self.main()
 
     def visualizeBoard(self):
-        self.scene = BoardView()
+        """set up and show board display using the Scene"""
         self.mapToScene(QRect(0, 0, self.size, self.size))
-        self.setScene(self.scene)
-        self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
-        self.grid_loc = self.scene.drawBoard()
-        
-    def visualizePiece(self):
-        self.opp_pieces = self.scene.drawPieces("Opponent")
-        self.player_pieces = self.scene.drawPieces("Player")
+        self.boardView = BoardView()
+        self.setScene(self.boardView)
+        self.grid_loc = self.boardView.drawBoard()
 
+    def visualizePiece(self):
+        """draw and recieve the piece locations"""
+        self.opp_pieces = self.boardView.drawPieces("Opponent")
+        self.player_pieces = self.boardView.drawPieces("Player")
+
+        self.boardView.pieceSelected.connect(self.selectedPiece)
+        self.boardView.pieceType.connect(self.getPieceType)
+        
     def findMoves(self,current_loc, player_or_opp):
         """indicate the possible legal moves the checkerpiece can make
         based on its location, check if black or red
@@ -169,10 +200,6 @@ class BoardController(QGraphicsView):
         make sure moves are not horizontal or vertical -X
         if king you can go backwards or forwards diagonlly, if regular only forward
         """
-        #show all moves
-        #then move any that are not legal
-        #then show on board
-        #if opponent row goes down so we add  
         if player_or_opp == "Opponent":
             leg_move_1 = [current_loc[0] + 1, current_loc[1]-1] #move left
             leg_move_2 = [current_loc[0] + 1, current_loc[1]+1] #move right
@@ -194,17 +221,29 @@ class BoardController(QGraphicsView):
                     moves_list.pop(index)
         
         legal_moves = moves_list
-        self.showLegalMoves(legal_moves)
+        self.boardView.drawLegalMoves(legal_moves)
+    
+    def selectedPiece(self,location):
+        self.curr_loc = location
+        print("location", self.curr_loc)
+        
+        return self.curr_loc
 
-    def showLegalMoves(self, legal_moves):
-        """paint a circle to show possible legal moves in scene of board"""
-        pen = QPen(QColor(0,0,0), 3, Qt.SolidLine)
-        fill = QColor(0,255,0)
-        for moves in legal_moves:
-            #print("moves", moves)
-            xo = moves[1] * Settings.WIDTH #pixel location
-            yo = moves[0] * Settings.WIDTH #pixel location
-            (self.scene.addEllipse(xo,yo,Settings.WIDTH,Settings.WIDTH,pen,fill))
+    def returnPieceType(self,piece_type):
+        self.curr_piece = self.getPieceType(piece_type=piece_type)
+        return self.curr_piece
+
+    def getPieceType(self, piece_type):
+        self.curr_piece = piece_type
+        return self.curr_piece
+
+    def isTurn(self):
+        """verifies if piece selected corresponds to respective
+        player or opponents turn return true if it is"""
+
+    def main(self):
+        print(self.curr_loc)
+        
 
 class CheckersAPP(QMainWindow):
     def __init__(self):
