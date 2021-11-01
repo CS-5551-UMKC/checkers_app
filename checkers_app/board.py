@@ -125,8 +125,10 @@ class CheckersGame():
         
         return legal_moves
 
-    def checkTurn(self):
-        pass
+    def checkCorrectTurn(self, piece_type, is_player_turn):
+        """check if piece type is the player turn"""
+        if piece_type == is_player_turn:
+            return True
 
     def updateKing(self):
         pass
@@ -226,7 +228,7 @@ class BoardController(QFrame):
         self.setLayout(self.layout)
         
         self.visualizeBoard()
-        self.turn = [None,None]
+        self.playerTurn = True
         self.toggle_on = False
 
     def minimumSizeHint(self):
@@ -337,8 +339,7 @@ class BoardController(QFrame):
             #check if piece exists from gamepiece dictionary - Done
             #check if it is the correct type selected - put in checkerpiece class
             san_location = self.checkersGame.row_col_mapping[curr_row,curr_col]
-
-            # show legal moves
+            #check if piece exists and it correlates to the correct piece turn type
             if self.checkersGame.checkCheckerExists(san_location):
                 piece = self.checkersGame.checkers_position[san_location]
                 moves_row_col = self.checkersGame.findLegalMoves(curr_row,curr_col, piece.player_or_opp)

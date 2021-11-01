@@ -12,7 +12,8 @@ class TestCheckersGame(unittest.TestCase):
 
     @classmethod
     def tearDown(self):
-        print("Tearing down testcase")
+        pass
+        #print("Tearing down testcase")
 
     def test_getRowColKey(self):
         
@@ -21,7 +22,7 @@ class TestCheckersGame(unittest.TestCase):
     def test_getRowColKey(self):
         pass
 
-    def successful_getSanPosition(self):
+    def test_successful_getSanPosition(self):
         """Justin Nguyen """
         row = 0
         col = 0
@@ -29,13 +30,25 @@ class TestCheckersGame(unittest.TestCase):
         msg = "No bueno"
         self.assertEqual(result, "a8", msg)
 
-    def invalid_getSanPosition(self):
+    def test_invalid_getSanPosition(self):
         """bad situation"""
         row = 8
         col = 1
         result = self.checkersGame.getSanPosition(row,col)
         msg = "No bueno"
         self.assertEqual(result, None, msg)
+
+    def test_successful_checkCorrectTurn(self):
+        turn = "Opponent"
+        piece_type = "Opponent"
+        result = self.checkersGame.checkCorrectTurn(piece_type, turn)
+        self.assertFalse(result, msg="It is the Opponents Turn")
+
+    def test_successful_checkCorrectTurn(self):
+        turn = "Opponent"
+        piece_type = "Opponent"
+        result = self.checkersGame.checkCorrectTurn(piece_type, turn)
+        self.assertTrue(result, msg="It is the Opponents Turn")
 
 if __name__=='__main__':
     unittest.main()
