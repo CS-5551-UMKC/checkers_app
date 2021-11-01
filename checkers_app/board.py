@@ -64,7 +64,7 @@ class CheckersGame():
 
     def getSanPosition(self,row,col):
         """returns san position using the row col mapping"""
-        if row<=8 or col <=8 or row<= -1 or col<= -1:
+        if row>=8 or col>=8 or row <= -1 or col<= -1:
             print("Position out of bounds")
             return None
         else:
@@ -127,8 +127,12 @@ class CheckersGame():
 
     def checkCorrectTurn(self, piece_type, is_player_turn):
         """check if piece type is the player turn"""
-        if piece_type == is_player_turn:
+        if piece_type == "Player" and is_player_turn == True:
             return True
+        elif piece_type == "Opponent" and is_player_turn == False:
+            return True
+        else:
+            return False
 
     def updateKing(self):
         pass
@@ -191,7 +195,7 @@ class MovesButton(QPushButton):
         self.grid_position= grid_position
         styleSheet = ("""
                     QPushButton{
-                        background-color:  #2B5DD1;
+                        background-color:  #2B5DD1;c
                         padding: 2px;
                     }
                     QPushButton::hover{
@@ -319,8 +323,13 @@ class BoardController(QFrame):
                 
                 #set toggle on button to false since we made a move 
                 self.toggle_on = False
+                self.switchTurns()
                 
         self.deleteMoves()
+
+    def switchTurns(self):
+        self.playerTurn = not self.playerTurn
+        print("Player turn is", self.playerTurn)
 
     def deleteMoves(self):
         """delete moves button after buttons are set"""
@@ -336,20 +345,25 @@ class BoardController(QFrame):
             y = event.pos().y()
             #get row and column
             curr_row,curr_col = self.getRowColFromPixel(x,y)
-            #check if piece exists from gamepiece dictionary - Done
-            #check if it is the correct type selected - put in checkerpiece class
+            #get San Location
             san_location = self.checkersGame.row_col_mapping[curr_row,curr_col]
+            
+            """Need to refactor this """
             #check if piece exists and it correlates to the correct piece turn type
             if self.checkersGame.checkCheckerExists(san_location):
                 piece = self.checkersGame.checkers_position[san_location]
-                moves_row_col = self.checkersGame.findLegalMoves(curr_row,curr_col, piece.player_or_opp)
-                if moves_row_col != False:
-                    #show legal moves in the game
-                    self.showMoves(moves_row_col,piece, curr_row, curr_col)
-                    self.toggle_on = True  
+                #check if correct piece based on turn is selected
+                if self.checkersGame.checkCorrectTurn(piece.player_or_opp, self.playerTurn):
+                    moves_row_col = self.checkersGame.findLegalMoves(curr_row,curr_col, piece.player_or_opp)
+                    if moves_row_col != False:
+                        #show legal moves in the game
+                        self.showMoves(moves_row_col,piece, curr_row, curr_col)
+                        self.toggle_on = True  
 
+                    else:
+                        print("no possible moves")
                 else:
-                    print("no possible moves")
+                    print("Incorrect piece selected")
             else:
                 print("no piece")
                 
