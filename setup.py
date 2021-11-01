@@ -9,7 +9,7 @@ setup(
       name="checkers_app",
       version ="1.0.0",
       author="ASE",
-      packages=["checkers_app"],
+      packages=['checkers_app'],
       #packages = find_packages(),
       #scripts=[],
       install_requires=[],

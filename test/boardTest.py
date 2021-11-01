@@ -39,7 +39,7 @@ class Board():
         based on its location, check if black or red
         current_loc = int [row, col] --> [y,x] location on board
         player_or_opp = string input of Opponent or Player
-        """
+        """ 
         
         """
         make sure moves are diagonal - X
