@@ -81,9 +81,11 @@ class CheckersGame():
     def updateCheckerPosition(self, new_checker, old_checker):
         """updates the position of the checkers position by removing the previous location of piece
         and updating the piece """
-        self.checkers_position.pop(old_checker.san_position) 
-        print("new checker position is", new_checker.san_position)
-        self.checkers_position[new_checker.san_position] = new_checker 
+        old_san_position = old_checker.getSanPosition()
+        new_san_position = new_checker.getSanPosition()
+        self.checkers_position.pop(old_san_position) 
+        print("new checker position is", new_san_position)
+        self.checkers_position[new_san_position] = new_checker 
 
     def findLegalMoves(self, row,col, player_or_opp):
         """need to refactor this and check if move is out of bounds"""
@@ -171,6 +173,31 @@ class Checker(QDialog):
         self.setMouseTracking(True)
         # When label is scaled, also scale image inside the label
         self.show()
+
+    def getSanPosition(self):
+        """accessor"""
+        return self.san_position
+
+    def getGridPosition(self):
+        """accessor"""
+        return self.grid_position
+
+    def updateSanPosition(self, san_position):
+        """update san position in string format"""
+        self.san_position = san_position
+        return self.san_position
+    
+    def updateGridPosition(self, grid_loc):
+        """update grid position with grid_loc [int_x, int_y]"""
+        self.grid_position = grid_loc
+        return self.grid_position
+
+    def checkPlayerorOpp(self):
+        """return Player or Opponent"""
+        return self.player_or_opp
+
+    def updatePieceType(self):
+        """update piece as king"""
 
     def enterEvent(self, event):
         if self.is_enabled:
