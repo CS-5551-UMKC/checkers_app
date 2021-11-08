@@ -214,11 +214,9 @@ class CheckersGame():
         for move in moves_list:
             possible_move = [row+move[0], col+move[1]]
             new_san_position = self.getSanPosition(possible_move[0], possible_move[1])
-
             #check if in bounds
             if not self.checkInBounds(possible_move):
                 continue 
-
             #check if new position is blocked
             if new_san_position in self.checkers_position:
                 continue
@@ -240,8 +238,6 @@ class CheckersGame():
         """check if piece position exists in the dictionary"""
         if (san_location) in self.checkers_position:
             return True
-        else:
-            return False
 
     def checkKing(self, player_or_opp, row):
         """if piece reaches opposing board then the checker piece will become king
@@ -554,8 +550,6 @@ class BoardController(QFrame):
                 if self.checkersGame.checkWinner(piece.getPlayerorOpp()) == True:
                     print("Winner is :", piece.getPlayerorOpp())
                     self.showWinner(piece.getPlayerorOpp())
-                else:
-                    print("No winner")
 
                 #set toggle on button to false since we made a move 
                 self.toggle_on = False
