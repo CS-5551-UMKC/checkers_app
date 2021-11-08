@@ -455,6 +455,11 @@ class BoardController(QFrame):
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label
 
+        row, col = square_dict['c7']
+        piece_label = Checker(self, 'c7', [row,col], "Opponent", False)
+        self.layout.addWidget(piece_label, row, col)
+        piece_info[piece_label.san_position] = piece_label
+
         return piece_info
 
     def showMoves(self, moves_row_col, piece, curr_row, curr_col):
@@ -479,10 +484,11 @@ class BoardController(QFrame):
             #want to delete the piece from the previous location
             if piece.grid_position == [curr_row, curr_col]:
                 piece.setParent(None) # delete the previous position
+                was_king = piece.isKing()
                 new_san_position = self.checkersGame.getSanPosition(new_row, new_col)
                 
                 #check if king or not
-                if self.checkersGame.checkKing(piece.player_or_opp, new_row):
+                if self.checkersGame.checkKing(piece.player_or_opp, new_row) or was_king:
                     new_checker = Checker(self, new_san_position, [new_row, new_col], piece.player_or_opp, True)
                 else:
                     new_checker = Checker(self, new_san_position, [new_row, new_col], piece.player_or_opp, False)
@@ -531,9 +537,10 @@ class BoardController(QFrame):
             #want to delete the piece from the previous location
             if piece.grid_position == [curr_row, curr_col]:
                 piece.setParent(None) # delete the previous position
+                was_king = piece.isKing()
                 new_san_position = self.checkersGame.getSanPosition(new_row, new_col)
                 #check if king or not
-                if self.checkersGame.checkKing(piece.player_or_opp, new_row):
+                if self.checkersGame.checkKing(piece.player_or_opp, new_row) or was_king:
                     new_checker = Checker(self, new_san_position, [new_row, new_col], piece.player_or_opp, True)
                 else:
                     new_checker = Checker(self, new_san_position, [new_row, new_col], piece.player_or_opp, False)
