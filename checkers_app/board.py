@@ -117,7 +117,31 @@ class CheckersGame():
         manhattan_distance = self.findManhattanDistance(curr_loc, opp_piece_loc)
         jump_loc = [opp_piece_loc[0]+manhattan_distance[0],opp_piece_loc[1]+manhattan_distance[1]]
         jump_list.append((jump_loc))
-        
+
+        opponent_move_list = [[1, -1], #move diag left
+                            [1, 1]] #move diag right
+
+        player_move_list = [[-1, -1], #move diag left
+                            [-1, 1]]  #move diag right
+
+        if player_or_opp == "Opponent":
+            moves_list = opponent_move_list 
+        else:
+            moves_list = player_move_list
+
+        for move in moves_list:
+            possible_move = [jump_loc[0]+move[0], jump_loc[1]+move[1]]
+            another_san = self.getSanPosition(jump_loc[0],jump_loc[1])
+            another_new_san_position = self.getSanPosition(possible_move[0], possible_move[1])
+
+            if self.checkPotentialJumps(another_new_san_position, player_or_opp):
+                jump = self.doJumps(another_san, another_new_san_position, player_or_opp)
+                flat_list = [item for sublist in jump for item in sublist]
+                jump_list.append(flat_list)
+            else:
+                print("no jumps at", possible_move)
+                continue
+
         return jump_list
 
     def getJumps(self, current_san_position, new_san_position, player_or_opp):
@@ -178,7 +202,6 @@ class CheckersGame():
             possible_move = [row+move[0], col+move[1]]
             current_san_position = self.getSanPosition(row,col)
             new_san_position = self.getSanPosition(possible_move[0], possible_move[1])
-            print("new san position", new_san_position)
 
             #check if in bounds
             if not self.checkInBounds(possible_move):
@@ -188,9 +211,9 @@ class CheckersGame():
             if self.checkPotentialJumps(new_san_position, player_or_opp):
                 jump = self.doJumps(current_san_position, new_san_position, player_or_opp)
                 #unpack list
-                flat_list = [item for sublist in jump for item in sublist]
-                legal_moves.append(flat_list)
+                #flat_list = [item for sublist in jump for item in sublist]
                 #legal_moves.append(jump)
+                legal_moves.extend(jump)
                 print("jump list", jump)
             #check if new position is blocked
             if new_san_position in self.checkers_position:
