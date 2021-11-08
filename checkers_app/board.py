@@ -75,7 +75,6 @@ class CheckersGame():
     def initCheckers(self):
         """layout the checker pieces for the initial game"""
         
-
     def recordPosition(self,piece):
         self.checkers_position[piece] = piece
 
@@ -84,8 +83,12 @@ class CheckersGame():
         and updating the piece """
         old_san_position = old_checker.getSanPosition()
         new_san_position = new_checker.getSanPosition()
-        self.checkers_position.pop(old_san_position) 
+        #self.checkers_position.pop(old_san_position)
+        self.removeCheckerPiece(old_san_position) 
         self.checkers_position[new_san_position] = new_checker 
+
+    def removeCheckerPiece(self, san_position):
+        self.checkers_position.pop(san_position)
 
     def findManhattanDistance(self,curr_loc, opponent_loc):
         dx = opponent_loc[0] - curr_loc[0]
@@ -93,18 +96,34 @@ class CheckersGame():
         
         return [dx,dy]
 
-    def getMovesList(self,player_or_opp):
+    def getMovesList(self,player_or_opp, is_king):
         """return moves possible based on type of piece"""
-        opponent_move_list = [[1, -1], #move diag left
-                            [1, 1]] #move diag right
+        basic_opponent_move_list = [[1, -1], #move diag left
+                                    [1, 1]] #move diag right
 
-        player_move_list = [[-1, -1], #move diag left
-                            [-1, 1]]  #move diag right
+        king_opponent_move_list = [[1, -1], #move diag left
+                                    [1, 1],
+                                    [-1,-1],
+                                    [-1,1]] #move diag right
 
-        if player_or_opp == "Opponent":
-            moves_list = opponent_move_list 
+        basic_player_move_list = [[-1, -1], #move diag left
+                                [-1, 1]]  #move diag right
+
+
+        king_player_move_list = [[-1, -1], #move diag left
+                                [-1, 1],
+                                [1, -1],
+                                [1, 1]]  #move diag right
+
+
+        if player_or_opp == "Opponent" and is_king == False:
+            moves_list = basic_opponent_move_list 
+        elif player_or_opp == "Opponent" and is_king == True:
+            moves_list = king_opponent_move_list
+        elif player_or_opp == "Player" and is_king == False:
+            moves_list = basic_player_move_list
         else:
-            moves_list = player_move_list
+            moves_list = king_opponent_move_list
         
         return moves_list
 
@@ -113,13 +132,14 @@ class CheckersGame():
         if ((moves[0]>= 0) and (moves[0]<=7) and (moves[1]>=0) and (moves[1]<=7)):
             return True
 
-    def findPotentialKills(self, row,col, player_or_opp):
+    def findPotentialKills(self, row,col, player_or_opp, is_king):
         """find potential kill based on row and location fo player
         returns a list of of row,col locations of potential kill
         uses recursion"""
         kill_moves = []
         killed_opponents = []
-        moves_list = self.getMovesList(player_or_opp)
+        moves_list = self.getMovesList(player_or_opp, is_king)
+        print("is it a king?", is_king)
         for move in moves_list:
             possible_move = [row+move[0], col+move[1]]
             current_san_position = self.getSanPosition(row,col)
@@ -127,7 +147,7 @@ class CheckersGame():
 
             #check for potential kills
             if self.checkPotentialKills(new_san_position, player_or_opp):
-                kills, killed_opps= self.doKills(current_san_position, new_san_position, player_or_opp)
+                kills, killed_opps= self.doKills(current_san_position, new_san_position, player_or_opp, is_king)
                 kill_moves.extend(kills)
                 killed_opponents.extend(killed_opps)
 
@@ -142,7 +162,7 @@ class CheckersGame():
             if blocking_piece_type != player_or_opp:
                 return True
 
-    def doKills(self, current_san_position, new_san_position, player_or_opp):
+    def doKills(self, current_san_position, new_san_position, player_or_opp, is_king):
         """determines possible jumps and returns it to kill list as row and column index 
         using recursion"""
         kill_moves = []
@@ -161,16 +181,15 @@ class CheckersGame():
         killed_opponents.append(opp_piece_loc)
 
         """recursion"""
-        moves_list = self.getMovesList(player_or_opp)
+        moves_list = self.getMovesList(player_or_opp, is_king)
+        count = 0
         for move in moves_list:
             possible_move = [jump_loc[0]+move[0], jump_loc[1]+move[1]]
             another_san = self.getSanPosition(jump_loc[0],jump_loc[1])
             another_new_san_position = self.getSanPosition(possible_move[0], possible_move[1])
 
             if self.checkPotentialKills(another_new_san_position, player_or_opp):
-                opponent_piece = self.getRowColPosition(another_new_san_position)
-                print("opponent pieces to be killed:, ", opponent_piece)
-                kills,opponents = self.doKills(another_san, another_new_san_position, player_or_opp)
+                kills,opponents = self.doKills(another_san, another_new_san_position, player_or_opp, is_king)
                 kill_moves.extend(kills)
                 killed_opponents.extend(opponents)
             else:
@@ -179,11 +198,11 @@ class CheckersGame():
 
         return kill_moves,killed_opponents
 
-    def findLegalMoves(self, row,col, player_or_opp):
+    def findLegalMoves(self, row,col, player_or_opp, is_king):
         """find legal moves that are not kills"""
 
         legal_moves = []
-        moves_list = self.getMovesList(player_or_opp)
+        moves_list = self.getMovesList(player_or_opp, is_king)
         for move in moves_list:
             possible_move = [row+move[0], col+move[1]]
             new_san_position = self.getSanPosition(possible_move[0], possible_move[1])
@@ -216,13 +235,24 @@ class CheckersGame():
         else:
             False
 
-    def updateKing(self):
-        pass
+    def checkKing(self, player_or_opp, row):
+        """if piece reaches opposing board then the checker piece will become king
+        so black piece reaches row 7, or rank is 1, red piece is vice versa"""
+        if player_or_opp == "Player":
+            if row == 0:
+                return True
+            else:
+                return False
+        else:
+            if row == 7:
+                return True
+            else:
+                return False
     
 class Checker(QDialog):
 
     """might make this custom paint and determine if player or oppponent"""
-    def __init__(self, parent, san_position, grid_position, player_or_opp):
+    def __init__(self, parent, san_position, grid_position, player_or_opp, is_king):
         super().__init__()
         
         # Make label transparent, so square behind piece is visible
@@ -236,15 +266,25 @@ class Checker(QDialog):
         self.grid_position = grid_position
         self.player_or_opp = player_or_opp #string 'Player' 'Opponent'
         
-        if self.player_or_opp == "Player":
+        self.king = is_king
+
+        if self.player_or_opp == "Player" and self.king == False:
             self.image = QPixmap('red_checker.png')
-        else:
+        elif self.player_or_opp == "Player" and self.king == True:
+            self.image = QPixmap('red_king.png')
+        elif self.player_or_opp == "Opponent" and self.king == False:
             self.image = QPixmap('black_piece.png')
+        else:
+            self.image = QPixmap('black_king.png')
 
         self.is_enabled = True
         self.setMouseTracking(True)
         # When label is scaled, also scale image inside the label
         self.show()
+
+    def isKing(self):
+        """check if the checker piece is a king or not"""
+        return self.king
 
     def getSanPosition(self):
         """accessor"""
@@ -400,36 +440,21 @@ class BoardController(QFrame):
         """refactor this code put this in the CheckersGameEngine:
         GUI will recieve the information of the CheckersPiece and place it accordingly"""
         piece_info = {}
-        row, col = square_dict['b2']
-        piece_label = Checker(self, san_position='b2', grid_position=[row,col], player_or_opp="Player")
+        row, col = square_dict['d4']
+        piece_label = Checker(self, 'd4', [row,col], "Player", False)
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label    
 
-        row, col = square_dict['c3']
-        piece_label = Checker(self,san_position='c3', grid_position=[row,col], player_or_opp="Player")
-        self.layout.addWidget(piece_label, row, col)
-        piece_info[piece_label.san_position] = piece_label
-
         row, col = square_dict['e5']
-        piece_label = Checker(self,san_position='e5', grid_position=[row,col], player_or_opp="Player")
+        piece_label = Checker(self, 'e5', [row,col], "Opponent", False)
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label
 
-        row, col = square_dict['f6']
-        piece_label = Checker(self,san_position='f6', grid_position=[row,col], player_or_opp="Opponent")
+        row, col = square_dict['e7']
+        piece_label = Checker(self, 'e7', [row,col], "Opponent", False)
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label
 
-        row, col = square_dict['c5']
-        piece_label = Checker(self,san_position='c5', grid_position=[row,col], player_or_opp="Opponent")
-        self.layout.addWidget(piece_label, row, col)
-        piece_info[piece_label.san_position] = piece_label
-
-        row, col = square_dict['c7']
-        piece_label = Checker(self,san_position='c7', grid_position=[row,col], player_or_opp="Opponent")
-        self.layout.addWidget(piece_label, row, col)
-        piece_info[piece_label.san_position] = piece_label
-        
         return piece_info
 
     def showMoves(self, moves_row_col, piece, curr_row, curr_col):
@@ -455,7 +480,13 @@ class BoardController(QFrame):
             if piece.grid_position == [curr_row, curr_col]:
                 piece.setParent(None) # delete the previous position
                 new_san_position = self.checkersGame.getSanPosition(new_row, new_col)
-                new_checker = Checker(self, new_san_position, [new_row, new_col], piece.player_or_opp)
+                
+                #check if king or not
+                if self.checkersGame.checkKing(piece.player_or_opp, new_row):
+                    new_checker = Checker(self, new_san_position, [new_row, new_col], piece.player_or_opp, True)
+                else:
+                    new_checker = Checker(self, new_san_position, [new_row, new_col], piece.player_or_opp, False)
+
                 #update position of checker
                 self.checkersGame.updateCheckerPosition(new_checker, piece)
                 # update the position in the GUI 
@@ -501,7 +532,11 @@ class BoardController(QFrame):
             if piece.grid_position == [curr_row, curr_col]:
                 piece.setParent(None) # delete the previous position
                 new_san_position = self.checkersGame.getSanPosition(new_row, new_col)
-                new_checker = Checker(self, new_san_position, [new_row, new_col], piece.player_or_opp)
+                #check if king or not
+                if self.checkersGame.checkKing(piece.player_or_opp, new_row):
+                    new_checker = Checker(self, new_san_position, [new_row, new_col], piece.player_or_opp, True)
+                else:
+                    new_checker = Checker(self, new_san_position, [new_row, new_col], piece.player_or_opp, False)
                 
                 #remove the opponent pieces
                 self.removePiece(victim_list)
@@ -525,6 +560,9 @@ class BoardController(QFrame):
         piece_list = self.findChildren(Checker)
         for piece in piece_list:
             if piece.grid_position in piece_removed_list:
+                #remove from GUI and remove from checkers position game engine
+                san_pos = self.checkersGame.getSanPosition(piece.grid_position[0],piece.grid_position[1])
+                self.checkersGame.removeCheckerPiece(san_pos)
                 piece.setParent(None)
                 print("Removed piece")
 
@@ -556,9 +594,9 @@ class BoardController(QFrame):
                 print("piece position:", piece.san_position)
                 #check if correct piece based on turn is selected
                 if self.checkersGame.checkCorrectTurn(piece.player_or_opp, self.playerTurn):
-                    kill_moves, opponent_locs = self.checkersGame.findPotentialKills(curr_row, curr_col, piece.player_or_opp)
+                    kill_moves, opponent_locs = self.checkersGame.findPotentialKills(curr_row, curr_col, piece.player_or_opp, piece.isKing())
                     print("opponent locs", opponent_locs)
-                    moves_row_col = self.checkersGame.findLegalMoves(curr_row,curr_col, piece.player_or_opp)
+                    moves_row_col = self.checkersGame.findLegalMoves(curr_row,curr_col, piece.player_or_opp, piece.isKing())
                     if moves_row_col or kill_moves:
                         #show legal moves in the game
                         self.showMoves(moves_row_col,piece, curr_row, curr_col)
