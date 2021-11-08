@@ -118,6 +118,7 @@ class CheckersGame():
         jump_loc = [opp_piece_loc[0]+manhattan_distance[0],opp_piece_loc[1]+manhattan_distance[1]]
         jump_list.append((jump_loc))
 
+        """need to refactor this recursion"""
         opponent_move_list = [[1, -1], #move diag left
                             [1, 1]] #move diag right
 
@@ -136,8 +137,7 @@ class CheckersGame():
 
             if self.checkPotentialJumps(another_new_san_position, player_or_opp):
                 jump = self.doJumps(another_san, another_new_san_position, player_or_opp)
-                flat_list = [item for sublist in jump for item in sublist]
-                jump_list.append(flat_list)
+                jump_list.extend(jump)
             else:
                 print("no jumps at", possible_move)
                 continue
@@ -210,9 +210,6 @@ class CheckersGame():
             #check for potential kills
             if self.checkPotentialJumps(new_san_position, player_or_opp):
                 jump = self.doJumps(current_san_position, new_san_position, player_or_opp)
-                #unpack list
-                #flat_list = [item for sublist in jump for item in sublist]
-                #legal_moves.append(jump)
                 legal_moves.extend(jump)
                 print("jump list", jump)
             #check if new position is blocked
@@ -403,18 +400,23 @@ class BoardController(QFrame):
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label    
 
-        row, col = square_dict['b4']
-        piece_label = Checker(self,san_position='b4', grid_position=[row,col], player_or_opp="Player")
+        row, col = square_dict['b2']
+        piece_label = Checker(self,san_position='b2', grid_position=[row,col], player_or_opp="Player")
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label
 
-        row, col = square_dict['e7']
-        piece_label = Checker(self,san_position='e7', grid_position=[row,col], player_or_opp="Opponent")
+        row, col = square_dict['c3']
+        piece_label = Checker(self,san_position='c3', grid_position=[row,col], player_or_opp="Opponent")
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label
 
         row, col = square_dict['c5']
         piece_label = Checker(self,san_position='c5', grid_position=[row,col], player_or_opp="Opponent")
+        self.layout.addWidget(piece_label, row, col)
+        piece_info[piece_label.san_position] = piece_label
+
+        row, col = square_dict['c7']
+        piece_label = Checker(self,san_position='c7', grid_position=[row,col], player_or_opp="Opponent")
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label
         
