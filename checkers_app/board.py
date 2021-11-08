@@ -495,7 +495,7 @@ class BoardController(QFrame):
                 victim_list.append(opp_locs[i])
                 print("victim list", victim_list)
 
-        piece_list = self.findChildren(QDialog)
+        piece_list = self.findChildren(Checker)
         for piece in piece_list:
             #want to delete the piece from the previous location
             if piece.grid_position == [curr_row, curr_col]:
