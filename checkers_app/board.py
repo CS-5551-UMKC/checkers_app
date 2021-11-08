@@ -30,13 +30,30 @@ class CheckersGame():
         self.reverse_rank = '87654321'
         self.file = 'abcdefgh'
         self.reverse_file = 'hgfedcba' 
-        self.checkers_position = {}
         self.getMapping()
+
+        self.checkers_position = {}
 
     def getMapping(self):
         """helper function"""
         self.row_col_mapping = self.getRowColKey()
         self.sans_mapping = self.getSanKey()
+
+    def getSansMap(self):
+        """accessor"""
+        return self.sans_mapping
+
+    def getRank(self):
+        """accessor"""
+        return self.rank 
+
+    def getReverseFile(self):
+        """accessor"""
+        return self.reverse_file
+
+    def getCheckersLayout(self):
+        """accessor"""
+        return self.checkers_position
 
     def getRowColKey(self):
         """generates a hashtable/dictionary key = row,col
@@ -72,9 +89,10 @@ class CheckersGame():
         row_col_position = self.sans_mapping[san_position]
         return row_col_position 
 
-    def initCheckers(self):
+    def initCheckers(self, initial_layout):
         """layout the checker pieces for the initial game"""
-        
+        self.checkers_position = initial_layout
+
     def checkWinner(self, player_or_opp):
         """figure out winner by checker pieces known, 
         if opposition is not found return True"""
@@ -106,6 +124,7 @@ class CheckersGame():
         self.checkers_position.pop(san_position)
 
     def findManhattanDistance(self,curr_loc, opponent_loc):
+        """find the manhattan distance and get direction for jumps"""
         dx = opponent_loc[0] - curr_loc[0]
         dy = opponent_loc[1] - curr_loc[1]
         
@@ -119,11 +138,11 @@ class CheckersGame():
         basic_player_move_list = [[-1, -1], #move diag left
                                 [-1, 1]]  #move diag right
         
-        """this is the same thing"""
-        king_move_list = [[-1, -1], #move diag left
-                        [-1, 1],
-                                [1, -1],
-                                [1, 1]]  #move diag right
+        """combination of the opponent and player moves"""
+        king_move_list = [[-1, -1], 
+                        [-1, 1], 
+                        [1, -1],
+                        [1, 1]] 
 
         """refactor this as a case switch or maybe put in Piece Class"""
         if player_or_opp == "Opponent" and is_king == False:
@@ -404,9 +423,13 @@ class BoardController(QFrame):
         self.layout.setGeometry(rect)
 
     def visualizeBoard(self):
-        """need to rename the dictionaries"""
-        self.drawBoard(self.checkersGame.rank, self.checkersGame.reverse_file)
-        self.checkersGame.checkers_position = self.placeCheckers(self.checkersGame.sans_mapping)
+        """begin visualing the board"""
+        rank_list = self.checkersGame.getRank()
+        reverse_file = self.checkersGame.getReverseFile()
+        self.drawBoard(rank_list, reverse_file)
+        #self.checkersGame.checkers_position = self.placeCheckers(self.checkersGame.getSansMap())
+        init_pieces = self.placeCheckers(self.checkersGame.getSansMap())
+        self.checkersGame.initCheckers(init_pieces)
 
     def drawBoard(self, rank_order, file_order_reverse):
         """draw board layout"""
@@ -431,6 +454,7 @@ class BoardController(QFrame):
     def placeCheckers(self, square_dict):
         """refactor this code put this in the CheckersGameEngine:
         GUI will recieve the information of the CheckersPiece and place it accordingly"""
+        """refactor this"""
         piece_info = {}
         row, col = square_dict['d4']
         piece_label = Checker(self, 'd4', [row,col], "Player", False)
@@ -451,6 +475,7 @@ class BoardController(QFrame):
         piece_label = Checker(self, 'c7', [row,col], "Opponent", False)
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label
+
 
         return piece_info
 
