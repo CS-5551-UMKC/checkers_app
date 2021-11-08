@@ -3,15 +3,11 @@ import sys
 import math 
 from itertools import cycle
 
-from PyQt5.QtCore import ( QRegExp,QFile, QRectF, QSize, QTimer, Qt,QRect, 
-                        QPointF,pyqtSignal, pyqtSlot)
-from PyQt5.QtGui import (QBrush, QColor, QPainter, QImage, QPixmap)
-from PyQt5.QtWidgets import (QApplication, QDialog, QFrame, QGridLayout, QLabel, QWidget, QGraphicsEllipseItem,
-                            QHBoxLayout, QGraphicsScene, QTableWidget,
-                             QGraphicsView, QMainWindow, QPushButton,
-                             QGraphicsObject, QSizePolicy)
-
-from PyQt5.QtGui import QPen, QBrush
+from PyQt5.QtCore import (QSize, Qt,QRect)
+from PyQt5.QtGui import (QPainter, QPixmap)
+from PyQt5.QtWidgets import (QApplication, QDialog, QFrame, QGridLayout, 
+                            QWidget, QHBoxLayout, QTableWidget,
+                            QMainWindow, QPushButton,QSizePolicy)
 
 from pprint import pprint
 
@@ -64,11 +60,12 @@ class CheckersGame():
 
     def getSanPosition(self,row,col):
         """returns san position using the row col mapping"""
-        if row>=8 or col>=8 or row <= -1 or col<= -1:
-            return None
-        else:
+        position = [row,col]
+        if self.checkInBounds(position):
             san_position = self.row_col_mapping[row,col]
             return san_position
+        else:
+            return None
 
     def getRowColPosition(self,san_position):
         """returns san position using the row col mapping"""
@@ -88,137 +85,120 @@ class CheckersGame():
         old_san_position = old_checker.getSanPosition()
         new_san_position = new_checker.getSanPosition()
         self.checkers_position.pop(old_san_position) 
-        print("new checker position is", new_san_position)
         self.checkers_position[new_san_position] = new_checker 
 
     def findManhattanDistance(self,curr_loc, opponent_loc):
         dx = opponent_loc[0] - curr_loc[0]
         dy = opponent_loc[1] - curr_loc[1]
+        
         return [dx,dy]
+
+    def getMovesList(self,player_or_opp):
+        """return moves possible based on type of piece"""
+        opponent_move_list = [[1, -1], #move diag left
+                            [1, 1]] #move diag right
+
+        player_move_list = [[-1, -1], #move diag left
+                            [-1, 1]]  #move diag right
+
+        if player_or_opp == "Opponent":
+            moves_list = opponent_move_list 
+        else:
+            moves_list = player_move_list
+        
+        return moves_list
 
     def checkInBounds(self,moves):
         """check if move is within bounds if so return True"""
         if ((moves[0]>= 0) and (moves[0]<=7) and (moves[1]>=0) and (moves[1]<=7)):
             return True
 
-    def checkPotentialJumps(self,new_san_position,player_or_opp):
-        if new_san_position in self.checkers_position:
-            blocking_piece_type = self.checkers_position[new_san_position].getPlayerorOpp()
-            if blocking_piece_type != player_or_opp:
-                return True
-            else:
-                return False
-
-    def doJumps(self, current_san_position, new_san_position, player_or_opp):
-        """determines possible jumps and returns it to jump list as row and column index"""
-        jump_list = []
-        curr_loc = self.getRowColPosition(current_san_position)
-        opp_piece_loc = self.checkers_position[new_san_position].getGridPosition()
-        manhattan_distance = self.findManhattanDistance(curr_loc, opp_piece_loc)
-        jump_loc = [opp_piece_loc[0]+manhattan_distance[0],opp_piece_loc[1]+manhattan_distance[1]]
-        jump_list.append((jump_loc))
-
-        """need to refactor this recursion"""
-        opponent_move_list = [[1, -1], #move diag left
-                            [1, 1]] #move diag right
-
-        player_move_list = [[-1, -1], #move diag left
-                            [-1, 1]]  #move diag right
-
-        if player_or_opp == "Opponent":
-            moves_list = opponent_move_list 
-        else:
-            moves_list = player_move_list
-
-        for move in moves_list:
-            possible_move = [jump_loc[0]+move[0], jump_loc[1]+move[1]]
-            another_san = self.getSanPosition(jump_loc[0],jump_loc[1])
-            another_new_san_position = self.getSanPosition(possible_move[0], possible_move[1])
-
-            if self.checkPotentialJumps(another_new_san_position, player_or_opp):
-                jump = self.doJumps(another_san, another_new_san_position, player_or_opp)
-                jump_list.extend(jump)
-            else:
-                print("no jumps at", possible_move)
-                continue
-
-        return jump_list
-
-    def getJumps(self, current_san_position, new_san_position, player_or_opp):
-        """check if there are any piece types not the same and are diagonal"""
-        jump_list = []
-        curr_loc = self.getRowColPosition(current_san_position)
-        print("current san position", current_san_position)
-        blocking_piece_type = self.checkers_position[new_san_position].getPlayerorOpp()
-        if blocking_piece_type != player_or_opp:
-            opp_piece_loc = self.checkers_position[new_san_position].getGridPosition()
-            #print("current location is", curr_loc)
-            #print("blocked by opponent", blocking_piece_type, opp_piece_loc)
-            manhattan_distance = self.findManhattanDistance(curr_loc, opp_piece_loc)
-            #print("manhattan distance is ", manhattan_distance)
-            jump_loc = [opp_piece_loc[0]+manhattan_distance[0],opp_piece_loc[1]+manhattan_distance[1]]
-            print("jump location", jump_loc)
-            san_jump_loc = self.getSanPosition(jump_loc[0], jump_loc[1]) 
-            print("san jump location", san_jump_loc)
-            moves = self.findLegalMoves(jump_loc[0], jump_loc[1], player_or_opp)
-            for move in moves: 
-                new_san_jump = self.getSanPosition(move[0], move[1])
-                print("new san jump", new_san_jump)
-                if self.checkPotentialJumps(new_san_jump, player_or_opp):
-                    jump = self.getJumps(san_jump_loc, new_san_jump, player_or_opp)
-                    flat_list = [item for sublist in jump for item in sublist]
-                    jump_list.append(flat_list)
-                else:
-                    print("no extra jumps")
-            print("san position for jump loc", san_jump_loc)
-            jump_list.append((jump_loc))
-            #set this as new location and then apply method to check diagonals
-            #apply recursion with checkPotentialJumps if there is an opponent player
-                    
-            #self.checkPotentialJumps(san_jump_loc)
-            print(jump_list)
-            return jump_list
-        else:
-            print("blocked", blocking_piece_type)
-            return jump_list
-
-    def findLegalMoves(self, row,col, player_or_opp):
-        """need to refactor this and check if move is out of bounds"""
-        current_loc = [row,col]
-        legal_moves = []
-
-        opponent_move_list = [[1, -1], #move diag left
-                            [1, 1]] #move diag right
-
-        player_move_list = [[-1, -1], #move diag left
-                            [-1, 1]]  #move diag right
-
-        if player_or_opp == "Opponent":
-            moves_list = opponent_move_list 
-        else:
-            moves_list = player_move_list
-
+    def findPotentialKills(self, row,col, player_or_opp):
+        """find potential kill based on row and location fo player
+        returns a list of of row,col locations of potential kill
+        uses recursion"""
+        kill_moves = []
+        killed_opponents = []
+        moves_list = self.getMovesList(player_or_opp)
         for move in moves_list:
             possible_move = [row+move[0], col+move[1]]
             current_san_position = self.getSanPosition(row,col)
             new_san_position = self.getSanPosition(possible_move[0], possible_move[1])
 
+            #check for potential kills
+            if self.checkPotentialKills(new_san_position, player_or_opp):
+                kills, killed_opps= self.doKills(current_san_position, new_san_position, player_or_opp)
+                kill_moves.extend(kills)
+                killed_opponents.extend(killed_opps)
+
+        return kill_moves, killed_opponents
+
+    def checkPotentialKills(self,new_san_position,player_or_opp):
+        """check new position contains a checker piece
+        if checker piece is not the same as the player or opp report
+        as potential kill bool True"""
+        if new_san_position in self.checkers_position:
+            blocking_piece_type = self.checkers_position[new_san_position].getPlayerorOpp()
+            if blocking_piece_type != player_or_opp:
+                return True
+
+    def doKills(self, current_san_position, new_san_position, player_or_opp):
+        """determines possible jumps and returns it to kill list as row and column index 
+        using recursion"""
+        kill_moves = []
+        killed_opponents = []
+        curr_loc = self.getRowColPosition(current_san_position)
+        opp_piece_loc = self.checkers_position[new_san_position].getGridPosition()
+        manhattan_distance = self.findManhattanDistance(curr_loc, opp_piece_loc)
+        jump_loc = [opp_piece_loc[0]+manhattan_distance[0],opp_piece_loc[1]+manhattan_distance[1]]
+        
+        """check if we are blocked at this jumped location """
+        if self.getSanPosition(jump_loc[0], jump_loc[1]) in self.checkers_position:
+            return kill_moves, killed_opponents
+
+        #append to initial kill and location of piece
+        kill_moves.append((jump_loc))
+        killed_opponents.append(opp_piece_loc)
+
+        """recursion"""
+        moves_list = self.getMovesList(player_or_opp)
+        for move in moves_list:
+            possible_move = [jump_loc[0]+move[0], jump_loc[1]+move[1]]
+            another_san = self.getSanPosition(jump_loc[0],jump_loc[1])
+            another_new_san_position = self.getSanPosition(possible_move[0], possible_move[1])
+
+            if self.checkPotentialKills(another_new_san_position, player_or_opp):
+                opponent_piece = self.getRowColPosition(another_new_san_position)
+                print("opponent pieces to be killed:, ", opponent_piece)
+                kills,opponents = self.doKills(another_san, another_new_san_position, player_or_opp)
+                kill_moves.extend(kills)
+                killed_opponents.extend(opponents)
+            else:
+                print("no jumps at", possible_move)
+                continue
+
+        return kill_moves,killed_opponents
+
+    def findLegalMoves(self, row,col, player_or_opp):
+        """find legal moves that are not kills"""
+
+        legal_moves = []
+        moves_list = self.getMovesList(player_or_opp)
+        for move in moves_list:
+            possible_move = [row+move[0], col+move[1]]
+            new_san_position = self.getSanPosition(possible_move[0], possible_move[1])
+
             #check if in bounds
             if not self.checkInBounds(possible_move):
                 continue 
-            
-            #check for potential kills
-            if self.checkPotentialJumps(new_san_position, player_or_opp):
-                jump = self.doJumps(current_san_position, new_san_position, player_or_opp)
-                legal_moves.extend(jump)
-                print("jump list", jump)
+
             #check if new position is blocked
             if new_san_position in self.checkers_position:
                 continue
-            
+
             legal_moves.append((possible_move[0],possible_move[1]))
  
-        return legal_moves
+        return legal_moves 
 
     def checkCorrectTurn(self, piece_type, is_player_turn):
         """check if piece type is the player turn"""
@@ -229,9 +209,6 @@ class CheckersGame():
         else:
             return False
 
-    def updateKing(self):
-        pass
-    
     def checkCheckerExists(self, san_location):
         """check if piece position exists in the dictionary"""
         if (san_location) in self.checkers_position:
@@ -239,6 +216,9 @@ class CheckersGame():
         else:
             False
 
+    def updateKing(self):
+        pass
+    
 class Checker(QDialog):
 
     """might make this custom paint and determine if player or oppponent"""
@@ -314,7 +294,7 @@ class MovesButton(QPushButton):
         self.grid_position= grid_position
         styleSheet = ("""
                     QPushButton{
-                        background-color:  #2B5DD1;c
+                        background-color:  #2B5DD1;
                         padding: 2px;
                     }
                     QPushButton::hover{
@@ -325,7 +305,32 @@ class MovesButton(QPushButton):
         #self.setStyleSheet('background-color: rgb(255,255,255)')
         self.setStyleSheet(styleSheet)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        
+class KillMovesButton(QPushButton):
+    def __init__(self, parent, san_position, grid_position, victims) :
+        super(KillMovesButton ,self).__init__()
+        self.board = parent
+        self.san_position = san_position
+        self.grid_position= grid_position
+        styleSheet = ("""
+                    QPushButton{
+                        background-color:  #FF0000;
+                        padding: 2px;
+                    }
+                    QPushButton::hover{
+                        background-color : lightred;
+                    }
+                    """)
 
+        #self.setStyleSheet('background-color: rgb(255,255,255)')
+        self.setStyleSheet(styleSheet)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.victims = victims
+
+    def getVictims(self):
+        """returns list of victims if kill button is executed"""
+        return self.victims
+        
 class BoardController(QFrame):
     """Define this as ViewController
     need to map row,col to Sans
@@ -395,18 +400,23 @@ class BoardController(QFrame):
         """refactor this code put this in the CheckersGameEngine:
         GUI will recieve the information of the CheckersPiece and place it accordingly"""
         piece_info = {}
-        row, col = square_dict['a1']
-        piece_label = Checker(self, san_position='a1', grid_position=[row,col], player_or_opp="Player")
+        row, col = square_dict['b2']
+        piece_label = Checker(self, san_position='b2', grid_position=[row,col], player_or_opp="Player")
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label    
 
-        row, col = square_dict['b2']
-        piece_label = Checker(self,san_position='b2', grid_position=[row,col], player_or_opp="Player")
+        row, col = square_dict['c3']
+        piece_label = Checker(self,san_position='c3', grid_position=[row,col], player_or_opp="Player")
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label
 
-        row, col = square_dict['c3']
-        piece_label = Checker(self,san_position='c3', grid_position=[row,col], player_or_opp="Opponent")
+        row, col = square_dict['e5']
+        piece_label = Checker(self,san_position='e5', grid_position=[row,col], player_or_opp="Player")
+        self.layout.addWidget(piece_label, row, col)
+        piece_info[piece_label.san_position] = piece_label
+
+        row, col = square_dict['f6']
+        piece_label = Checker(self,san_position='f6', grid_position=[row,col], player_or_opp="Opponent")
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label
 
@@ -431,7 +441,7 @@ class BoardController(QFrame):
             indicated_move = MovesButton(self, san_position, moves)
             indicated_move.clicked.connect(lambda: self.movePiece(piece, curr_row, curr_col)) 
             self.layout.addWidget(indicated_move, moves[0], moves[1])
-        
+
     def movePiece(self, piece, curr_row, curr_col):
         """ get the location button selected """
         button = self.sender()
@@ -454,16 +464,77 @@ class BoardController(QFrame):
                 #set toggle on button to false since we made a move 
                 self.toggle_on = False
                 self.switchTurns()
+
+        self.deleteMoves(KillMovesButton)        
+        self.deleteMoves(MovesButton)
+
+    def showKills(self, kill_moves,opps_locs,piece, curr_row, curr_col):
+        """show legal kills the piece can make"""
+        for idx,moves in enumerate(kill_moves):
+            san_position = self.checkersGame.getSanPosition(moves[0], moves[1])
+            indicated_move = KillMovesButton(self, san_position, moves, idx)
+            print("victims from the killsmoves button:", indicated_move.getVictims())
+            indicated_move.clicked.connect(lambda: self.executeKill(piece, curr_row, curr_col, opps_locs)) 
+            self.layout.addWidget(indicated_move, moves[0], moves[1])
+
+    def executeKill(self, piece, curr_row, curr_col, opp_locs):
+        """ get the location button selected """
+        button = self.sender()
+        idx = self.layout.indexOf(button)
+        location = self.layout.getItemPosition(idx)
+        new_row = location[0]
+        new_col = location[1]
+        victim_list = []
+
+        print("victim index" , button.getVictims())
+        if button.getVictims() == 0:
+            victim_list.append(opp_locs[button.getVictims()])
+            print("victim list", victim_list)
+        else:
+            for i in range(-1, button.getVictims()):
+                victim_list.append(opp_locs[i])
+                print("victim list", victim_list)
+
+        piece_list = self.findChildren(QDialog)
+        for piece in piece_list:
+            #want to delete the piece from the previous location
+            if piece.grid_position == [curr_row, curr_col]:
+                piece.setParent(None) # delete the previous position
+                new_san_position = self.checkersGame.getSanPosition(new_row, new_col)
+                new_checker = Checker(self, new_san_position, [new_row, new_col], piece.player_or_opp)
                 
-        self.deleteMoves()
+                #remove the opponent pieces
+                self.removePiece(victim_list)
+                
+                #update position of checker
+                self.checkersGame.updateCheckerPosition(new_checker, piece)
+                
+                # update the position in the GUI 
+                self.layout.addWidget(new_checker, new_row, new_col) 
+
+                #set toggle on button to false since we made a move 
+                self.toggle_on = False
+                self.switchTurns()
+                
+        self.deleteMoves(KillMovesButton)        
+        self.deleteMoves(MovesButton)
+
+    def removePiece(self, piece_removed_list):
+        """removed pieces from board based on pieced_removed
+        piece_removed is a list of row,col coordinates"""
+        piece_list = self.findChildren(Checker)
+        for piece in piece_list:
+            if piece.grid_position in piece_removed_list:
+                piece.setParent(None)
+                print("Removed piece")
 
     def switchTurns(self):
         self.playerTurn = not self.playerTurn
         print("Player turn is", self.playerTurn)
 
-    def deleteMoves(self):
+    def deleteMoves(self, button_type):
         """delete moves button after piece is set"""
-        moves_button = self.findChildren(MovesButton)
+        moves_button = self.findChildren(button_type)
         for button in moves_button:
             #print("button", button.grid_position)
             button.setParent(None)
@@ -485,12 +556,14 @@ class BoardController(QFrame):
                 print("piece position:", piece.san_position)
                 #check if correct piece based on turn is selected
                 if self.checkersGame.checkCorrectTurn(piece.player_or_opp, self.playerTurn):
+                    kill_moves, opponent_locs = self.checkersGame.findPotentialKills(curr_row, curr_col, piece.player_or_opp)
+                    print("opponent locs", opponent_locs)
                     moves_row_col = self.checkersGame.findLegalMoves(curr_row,curr_col, piece.player_or_opp)
-                    print(moves_row_col)
-                    if moves_row_col:
+                    if moves_row_col or kill_moves:
                         #show legal moves in the game
                         self.showMoves(moves_row_col,piece, curr_row, curr_col)
-                        self.toggle_on = True  
+                        self.showKills(kill_moves, opponent_locs, piece, curr_row, curr_col)
+                        self.toggle_on = True
                     else:
                         print("no possible moves")
                 else:
@@ -514,7 +587,8 @@ class BoardController(QFrame):
                 piece = self.checkersGame.checkers_position[san_location]
                 moves_row_col = self.checkersGame.findLegalMoves(curr_row,curr_col, piece.player_or_opp)
                 self.toggle_on = False
-                self.deleteMoves()  
+                self.deleteMoves(KillMovesButton)
+                self.deleteMoves(MovesButton)  
                     
 class CheckersAPP(QMainWindow):
     def __init__(self):
