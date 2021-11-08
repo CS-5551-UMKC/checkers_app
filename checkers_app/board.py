@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (QApplication, QDialog, QFrame, QGridLayout,
 from pprint import pprint
 
 
+
 """
 Board Controller - QWidget?
     - handles all the buisiness logic 
@@ -205,6 +206,10 @@ class CheckersGame():
         if self.getSanPosition(jump_loc[0], jump_loc[1]) in self.checkers_position:
             return kill_moves, killed_opponents
 
+        """check if the jump will get us out of bounds"""
+        if not self.checkInBounds(jump_loc):
+            return kill_moves, killed_opponents
+ 
         #append to initial kill and location of piece
         kill_moves.append((jump_loc))
         killed_opponents.append(opp_piece_loc)
@@ -244,7 +249,7 @@ class CheckersGame():
  
         return legal_moves 
 
-    def checkCorrectTurn(self, piece_type, is_player_turn):
+    def checkCorrectPiece(self, piece_type, is_player_turn):
         """check if piece type is the player turn"""
         if piece_type == "Player" and is_player_turn == True:
             return True
@@ -426,9 +431,11 @@ class BoardController(QFrame):
         """begin visualing the board"""
         rank_list = self.checkersGame.getRank()
         reverse_file = self.checkersGame.getReverseFile()
+        sans_map = self.checkersGame.getSansMap()
         self.drawBoard(rank_list, reverse_file)
         #self.checkersGame.checkers_position = self.placeCheckers(self.checkersGame.getSansMap())
-        init_pieces = self.placeCheckers(self.checkersGame.getSansMap())
+        init_pieces = self.placeCheckers(sans_map, rank_list, reverse_file)
+        pprint(init_pieces)
         self.checkersGame.initCheckers(init_pieces)
 
     def drawBoard(self, rank_order, file_order_reverse):
@@ -451,33 +458,31 @@ class BoardController(QFrame):
         
         return (row,col)
 
-    def placeCheckers(self, square_dict):
+    def placeCheckers(self, sans_map, rank_order, file_order_reverse):
         """refactor this code put this in the CheckersGameEngine:
         GUI will recieve the information of the CheckersPiece and place it accordingly"""
         """refactor this"""
-        piece_info = {}
-        row, col = square_dict['d4']
-        piece_label = Checker(self, 'd4', [row,col], "Player", False)
-        self.layout.addWidget(piece_label, row, col)
-        piece_info[piece_label.san_position] = piece_label    
+        board_layout = {}
+        row_list = [0,1,2,3,4,5,6,7]
+        col_list = [0,1,2,3,4,5,6,7]
 
-        row, col = square_dict['d2']
-        piece_label = Checker(self, 'd2', [row,col], "Player", False)
-        self.layout.addWidget(piece_label, row, col)
-        piece_info[piece_label.san_position] = piece_label
+        for row, row_loc in enumerate(row_list[5:8]):
+            for col, col_loc in enumerate(col_list):
+                if (row_loc + col_loc) % 2 == 1:
+                    file_rank = self.checkersGame.getSanPosition(row_loc,col_loc)
+                    piece_label = Checker(self, file_rank, [row_loc,col_loc], "Player", False)
+                    board_layout[piece_label.san_position] = piece_label    
+                    self.layout.addWidget(piece_label, row_loc, col_loc)
 
-        row, col = square_dict['e5']
-        piece_label = Checker(self, 'e5', [row,col], "Opponent", False)
-        self.layout.addWidget(piece_label, row, col)
-        piece_info[piece_label.san_position] = piece_label
+        for row, row_loc in enumerate(row_list[0:3]):
+            for col, col_loc in enumerate(col_list):
+                if (row_loc + col_loc) % 2 == 1:
+                    file_rank = self.checkersGame.getSanPosition(row_loc,col_loc)
+                    piece_label = Checker(self, file_rank, [row_loc,col_loc], "Opponent", False)
+                    board_layout[piece_label.san_position] = piece_label    
+                    self.layout.addWidget(piece_label, row_loc, col_loc)
 
-        row, col = square_dict['c7']
-        piece_label = Checker(self, 'c7', [row,col], "Opponent", False)
-        self.layout.addWidget(piece_label, row, col)
-        piece_info[piece_label.san_position] = piece_label
-
-
-        return piece_info
+        return board_layout
 
     def showMoves(self, moves_row_col, piece, curr_row, curr_col):
         """show legal moves on the GUI where player can select , if they select it then we send a signal
@@ -629,7 +634,7 @@ class BoardController(QFrame):
                 piece = self.checkersGame.checkers_position[san_location]
                 print("piece position:", piece.san_position)
                 #check if correct piece based on turn is selected
-                if self.checkersGame.checkCorrectTurn(piece.player_or_opp, self.playerTurn):
+                if self.checkersGame.checkCorrectPiece(piece.player_or_opp, self.playerTurn):
                     kill_moves, opponent_locs = self.checkersGame.findPotentialKills(curr_row, curr_col, piece.player_or_opp, piece.isKing())
                     print("opponent locs", opponent_locs)
                     moves_row_col = self.checkersGame.findLegalMoves(curr_row,curr_col, piece.player_or_opp, piece.isKing())
