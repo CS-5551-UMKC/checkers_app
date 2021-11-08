@@ -15,7 +15,6 @@ class TestCheckersGame(unittest.TestCase):
         print("Tearing down testcase")
 
     def test_getRowColKey(self):
-        
         pass
 
     def test_getRowColKey(self):
