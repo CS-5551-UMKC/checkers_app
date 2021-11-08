@@ -3,9 +3,18 @@ sys.path.append("..")
 import unittest
 from checkers_app.board import CheckersGame
 
-
-class TestCheckersGame(unittest.TestCase):
+class CheckersPiece():
+    def __init__(self) -> None:
+        pass
     
+    def get_piece_type(self):
+        pass
+
+    def isKing(self):
+        pass
+
+class TestCheckersPosition(unittest.TestCase):
+
     @classmethod
     def setUp(self):
         self.checkersGame = CheckersGame()
@@ -15,6 +24,4 @@ class TestCheckersGame(unittest.TestCase):
     def tearDown(self):
         print("Tearing down testcase")
 
-
-if __name__=='__main__':
-    unittest.main()
+    

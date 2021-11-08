@@ -7,7 +7,7 @@ from PyQt5.QtCore import (QSize, Qt,QRect)
 from PyQt5.QtGui import (QPainter, QPixmap)
 from PyQt5.QtWidgets import (QApplication, QDialog, QFrame, QGridLayout, 
                             QWidget, QHBoxLayout, QTableWidget,
-                            QMainWindow, QPushButton,QSizePolicy)
+                            QMainWindow, QPushButton,QSizePolicy, QMessageBox)
 
 from pprint import pprint
 
@@ -75,8 +75,23 @@ class CheckersGame():
     def initCheckers(self):
         """layout the checker pieces for the initial game"""
         
-    def recordPosition(self,piece):
-        self.checkers_position[piece] = piece
+    def checkWinner(self, player_or_opp):
+        """figure out winner by checker pieces known, 
+        if opposition is not found return True"""
+        print("checking winner")
+        if player_or_opp == "Player":
+            opposition = "Opponent"
+        else:
+            opposition = "Player"
+        
+        piece_list = list(self.checkers_position.values())
+        for piece in piece_list:
+            print("Piece type is", piece.getPlayerorOpp())
+            if piece.getPlayerorOpp() ==  opposition:
+                print("still have opposition of", opposition)
+                break
+        else:
+            return True
 
     def updateCheckerPosition(self, new_checker, old_checker):
         """updates the position of the checkers position by removing the previous location of piece
@@ -101,29 +116,24 @@ class CheckersGame():
         basic_opponent_move_list = [[1, -1], #move diag left
                                     [1, 1]] #move diag right
 
-        king_opponent_move_list = [[1, -1], #move diag left
-                                    [1, 1],
-                                    [-1,-1],
-                                    [-1,1]] #move diag right
-
         basic_player_move_list = [[-1, -1], #move diag left
                                 [-1, 1]]  #move diag right
-
-
-        king_player_move_list = [[-1, -1], #move diag left
-                                [-1, 1],
+        
+        """this is the same thing"""
+        king_move_list = [[-1, -1], #move diag left
+                        [-1, 1],
                                 [1, -1],
                                 [1, 1]]  #move diag right
 
-
+        """refactor this as a case switch or maybe put in Piece Class"""
         if player_or_opp == "Opponent" and is_king == False:
             moves_list = basic_opponent_move_list 
         elif player_or_opp == "Opponent" and is_king == True:
-            moves_list = king_opponent_move_list
+            moves_list = king_move_list
         elif player_or_opp == "Player" and is_king == False:
             moves_list = basic_player_move_list
         else:
-            moves_list = king_opponent_move_list
+            moves_list = king_move_list
         
         return moves_list
 
@@ -182,7 +192,6 @@ class CheckersGame():
 
         """recursion"""
         moves_list = self.getMovesList(player_or_opp, is_king)
-        count = 0
         for move in moves_list:
             possible_move = [jump_loc[0]+move[0], jump_loc[1]+move[1]]
             another_san = self.getSanPosition(jump_loc[0],jump_loc[1])
@@ -200,7 +209,6 @@ class CheckersGame():
 
     def findLegalMoves(self, row,col, player_or_opp, is_king):
         """find legal moves that are not kills"""
-
         legal_moves = []
         moves_list = self.getMovesList(player_or_opp, is_king)
         for move in moves_list:
@@ -233,7 +241,7 @@ class CheckersGame():
         if (san_location) in self.checkers_position:
             return True
         else:
-            False
+            return False
 
     def checkKing(self, player_or_opp, row):
         """if piece reaches opposing board then the checker piece will become king
@@ -268,6 +276,7 @@ class Checker(QDialog):
         
         self.king = is_king
 
+        """refactor this to case switch"""
         if self.player_or_opp == "Player" and self.king == False:
             self.image = QPixmap('red_checker.png')
         elif self.player_or_opp == "Player" and self.king == True:
@@ -283,7 +292,7 @@ class Checker(QDialog):
         self.show()
 
     def isKing(self):
-        """check if the checker piece is a king or not"""
+        """accessor"""
         return self.king
 
     def getSanPosition(self):
@@ -294,22 +303,9 @@ class Checker(QDialog):
         """accessor"""
         return self.grid_position
 
-    def updateSanPosition(self, san_position):
-        """update san position in string format"""
-        self.san_position = san_position
-        return self.san_position
-    
-    def updateGridPosition(self, grid_loc):
-        """update grid position with grid_loc [int_x, int_y]"""
-        self.grid_position = grid_loc
-        return self.grid_position
-
     def getPlayerorOpp(self):
         """return Player or Opponent"""
         return self.player_or_opp
-
-    def updatePieceType(self):
-        """update piece as king"""
 
     def enterEvent(self, event):
         if self.is_enabled:
@@ -445,13 +441,13 @@ class BoardController(QFrame):
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label    
 
-        row, col = square_dict['e5']
-        piece_label = Checker(self, 'e5', [row,col], "Opponent", False)
+        row, col = square_dict['d2']
+        piece_label = Checker(self, 'd2', [row,col], "Player", False)
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label
 
-        row, col = square_dict['e7']
-        piece_label = Checker(self, 'e7', [row,col], "Opponent", False)
+        row, col = square_dict['e5']
+        piece_label = Checker(self, 'e5', [row,col], "Opponent", False)
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label
 
@@ -553,6 +549,13 @@ class BoardController(QFrame):
                 
                 # update the position in the GUI 
                 self.layout.addWidget(new_checker, new_row, new_col) 
+                
+                # check gamestate here
+                if self.checkersGame.checkWinner(piece.getPlayerorOpp()) == True:
+                    print("Winner is :", piece.getPlayerorOpp())
+                    self.showWinner(piece.getPlayerorOpp())
+                else:
+                    print("No winner")
 
                 #set toggle on button to false since we made a move 
                 self.toggle_on = False
@@ -560,6 +563,13 @@ class BoardController(QFrame):
                 
         self.deleteMoves(KillMovesButton)        
         self.deleteMoves(MovesButton)
+
+    def showWinner(self, player_or_opp):
+        """Pop up message to notify who the winner is"""
+        msg = QMessageBox()
+        msg.setWindowTitle("Winner")
+        msg.setText("The Winner is %s" % player_or_opp)
+        msg.exec_()
 
     def removePiece(self, piece_removed_list):
         """removed pieces from board based on pieced_removed
@@ -630,7 +640,7 @@ class BoardController(QFrame):
             # show legal moves
             if self.checkersGame.checkCheckerExists(san_location):
                 piece = self.checkersGame.checkers_position[san_location]
-                moves_row_col = self.checkersGame.findLegalMoves(curr_row,curr_col, piece.player_or_opp)
+                moves_row_col = self.checkersGame.findLegalMoves(curr_row,curr_col, piece.player_or_opp, piece.isKing())
                 self.toggle_on = False
                 self.deleteMoves(KillMovesButton)
                 self.deleteMoves(MovesButton)  

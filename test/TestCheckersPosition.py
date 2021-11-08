@@ -3,7 +3,7 @@ sys.path.append("..")
 import unittest
 from checkers_app.board import CheckersGame
 
-class TestCheckersGame(unittest.TestCase):
+class TestCheckersPosition(unittest.TestCase):
     
     @classmethod
     def setUp(self):
@@ -21,7 +21,6 @@ class TestCheckersGame(unittest.TestCase):
         pass
 
     def test_successful_getSanPosition(self):
-        """Justin Nguyen """
         row = 0
         col = 0
         result = self.checkersGame.getSanPosition(row,col)
