@@ -26,7 +26,7 @@ Board View - QFrame
 """
 class CheckersGame():
     """this class drives the rules of the game"""
-    def __init__(self) -> None:
+    def __init__(self):
         self.grid_size = 8
         self.rank = '12345678'
         self.reverse_rank = '87654321'
@@ -398,7 +398,7 @@ class BoardController(QFrame):
     what is the neighboring positions
     """
 
-    def __init__(self) -> None:
+    def __init__(self):
         super(BoardController,self).__init__()
         #define layout of controller
         self.layout = QGridLayout()

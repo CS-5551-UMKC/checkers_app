@@ -24,7 +24,7 @@ Board View - QFrame
 """
 class CheckersGame():
     """this class drives the rules of the game"""
-    def __init__(self) -> None:
+    def __init__(self):
         self.grid_size = 8
         self.rank = '12345678'
         self.reverse_rank = '87654321'
@@ -205,6 +205,10 @@ class CheckersGame():
         if self.getSanPosition(jump_loc[0], jump_loc[1]) in self.checkers_position:
             return kill_moves, killed_opponents
 
+        """check if the jump will get us out of bounds"""
+        if not self.checkInBounds(jump_loc):
+            return kill_moves, killed_opponents
+
         #append to initial kill and location of piece
         kill_moves.append((jump_loc))
         killed_opponents.append(opp_piece_loc)
@@ -358,7 +362,7 @@ class MovesButton(QPushButton):
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         
 class KillMovesButton(QPushButton):
-    def __init__(self, parent, san_position, grid_position, victims) :
+    def __init__(self, parent, san_position, grid_position, victims):
         super(KillMovesButton ,self).__init__()
         self.board = parent
         self.san_position = san_position
@@ -471,8 +475,8 @@ class BoardController(QFrame):
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label
 
-        row, col = square_dict['h8']
-        piece_label = Checker(self, 'h8', [row,col], "Opponent", False)
+        row, col = square_dict['c5']
+        piece_label = Checker(self, 'c5', [row,col], "Opponent", False)
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label
 
