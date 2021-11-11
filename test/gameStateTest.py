@@ -64,7 +64,7 @@ class TestGameState(unittest.TestCase):
 
 
     #AC 12.1 Player/red piece becomes king | Assert checkKing is True for player piece
-    def test_check_king_player(self):
+    def test_king_player(self):
         checkersGame = CheckersGame()
         new_checker = CheckersPiece([1, 7], "Player")
         checkersGame.checkers_position = {
@@ -78,7 +78,7 @@ class TestGameState(unittest.TestCase):
         self.assertEqual(checkersGame.checkKing(new_checker.getPlayerorOpp(), new_checker.getPos()[0]), True)
     
     #AC 12.2 Opponent/black piece becomes king | Assert checkKing is True for opponent piece
-    def test_check_king_opp(self):
+    def test_king_opp(self):
         checkersGame = CheckersGame()
         new_checker = CheckersPiece([6, 0], "Opponent")
         checkersGame.checkers_position = {
