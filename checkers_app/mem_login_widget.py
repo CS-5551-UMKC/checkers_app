@@ -7,7 +7,6 @@ Also phone number data is messy need to clean it up and reupload to database
 import unittest
 
 import sys
-import mysql.connector 
 from datetime import datetime
 
 import logging 
@@ -21,7 +20,6 @@ from PyQt5.QtWidgets import QTableWidget,QTableWidgetItem, QMainWindow, QStacked
 from PyQt5.QtCore import pyqtSlot, QDate, QTime, QDateTime, Qt, QThread, QTimer
 
 
-from golden_heart import ui_utils,main_screen,admin_login,admin_screen
 #set up the widget class for this stacked page
 
 #%% Functions -> Might move into utility function repo

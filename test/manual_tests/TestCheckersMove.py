@@ -461,9 +461,8 @@ class BoardController(QFrame):
         """refactor this"""
         piece_info = {}
 
-        """AC 9.1 Single Capture by Player"""
-        row, col = square_dict['d4']
-        piece_label = Checker(self, 'd4', [row,col], "Player", False)
+        row, col = square_dict['a5']
+        piece_label = Checker(self, 'a5', [row,col], "Player", False)
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label
 
@@ -472,19 +471,18 @@ class BoardController(QFrame):
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label
         
-        """AC 9.2 Single Capture by Opponent"""
-        row, col = square_dict['d6']
-        piece_label = Checker(self, 'd6', [row,col], "Player", False)
+        row, col = square_dict['b6']
+        piece_label = Checker(self, 'b6', [row,col], "Player", False)
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label    
 
-        row, col = square_dict['b4']
-        piece_label = Checker(self, 'b4', [row,col], "Player", False)
+        row, col = square_dict['a7']
+        piece_label = Checker(self, 'a7', [row,col], "Player", False)
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label    
 
-        row, col = square_dict['e7']
-        piece_label = Checker(self, 'e7', [row,col], "Opponent", False)
+        row, col = square_dict['f6']
+        piece_label = Checker(self, 'f6', [row,col], "Player", True)
         self.layout.addWidget(piece_label, row, col)
         piece_info[piece_label.san_position] = piece_label
 

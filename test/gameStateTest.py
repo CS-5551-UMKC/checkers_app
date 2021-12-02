@@ -91,6 +91,35 @@ class TestGameState(unittest.TestCase):
         #Now checkKing should return true
         self.assertEqual(checkersGame.checkKing(new_checker.getPlayerorOpp(), new_checker.getPos()[0]), True)
       
+    #AC 12.3 Opponent/black piece does not king | Assert checkKing is False for opponent piece
+    def test_no_king_opponent(self):
+        checkersGame = CheckersGame()
+        new_checker = CheckersPiece([5, 0], "Opponent")
+        checkersGame.checkers_position = {
+            "1": new_checker
+        }
+        #Not at end of board yet
+        self.assertEqual(checkersGame.checkKing(new_checker.getPlayerorOpp(), new_checker.getPos()[0]), False)
+        #Move to end of board
+        new_checker.updatePos(6, 0) 
+        #Now checkKing should return true
+        self.assertEqual(checkersGame.checkKing(new_checker.getPlayerorOpp(), new_checker.getPos()[0]), False)
+
+    #AC 12.3 Opponent/black piece does not king | Assert checkKing is False for opponent piece
+    def test_no_king_player(self):
+        checkersGame = CheckersGame()
+        new_checker = CheckersPiece([2, 0], "Player")
+        checkersGame.checkers_position = {
+            "1": new_checker
+        }
+        #Not at end of board yet
+        self.assertEqual(checkersGame.checkKing(new_checker.getPlayerorOpp(), new_checker.getPos()[0]), False)
+        #Move to end of board
+        new_checker.updatePos(1, 0) 
+        #Now checkKing should return true
+        self.assertEqual(checkersGame.checkKing(new_checker.getPlayerorOpp(), new_checker.getPos()[0]), False)
+
+
     @classmethod
     def tearDown(self):
         print("Tearing down testcase")
