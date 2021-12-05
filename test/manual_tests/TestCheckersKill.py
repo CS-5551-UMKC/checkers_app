@@ -104,9 +104,7 @@ class CheckersGame():
         
         piece_list = list(self.checkers_position.values())
         for piece in piece_list:
-            print("Piece type is", piece.getPlayerorOpp())
             if piece.getPlayerorOpp() ==  opposition:
-                print("still have opposition of", opposition)
                 break
         else:
             return True
@@ -168,7 +166,6 @@ class CheckersGame():
         kill_moves = []
         killed_opponents = []
         moves_list = self.getMovesList(player_or_opp, is_king)
-        print("is it a king?", is_king)
         for move in moves_list:
             possible_move = [row+move[0], col+move[1]]
             current_san_position = self.getSanPosition(row,col)
