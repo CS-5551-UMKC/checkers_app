@@ -440,7 +440,7 @@ class BoardController(QFrame):
         return updated_checker, updated_checker_model
 
     def aiUpdatePiece(self, old_piece_model, new_piece_model):
-        """update board from AI change and also in the GUI"""
+        """update board from AI change and also in the GUI return model"""
         print("old piece model", old_piece_model)
         was_king = old_piece_model.isKing()
         new_row_col_position = self.checkersGame.getRowColPosition(new_piece_model.getSanPosition())
@@ -469,7 +469,7 @@ class BoardController(QFrame):
                 self.layout.addWidget(updated_checker, new_row_col_position[0], new_row_col_position[1]) 
                 #set toggle on button to false since we made a move 
                 self.toggle_on = False  
-                self.switchTurns()
+                #self.switchTurns()
 
     def movePiece(self, piece, curr_row, curr_col):
         """ get the location button selected """
@@ -559,9 +559,14 @@ class BoardController(QFrame):
     def removePiece(self, piece_removed_list):
         """removed pieces from board based on pieced_removed
         piece_removed is a list of row,col coordinates"""
+        if len(piece_removed_list) > 1:
+            dead_piece = piece_removed_list[-1]
+        else:
+            dead_piece = piece_removed_list
+
         piece_list = self.findChildren(Checker)
         for piece in piece_list:
-            if piece.grid_position in piece_removed_list:
+            if piece.grid_position in dead_piece:
                 #remove from GUI and remove from checkers position game engine
                 san_pos = self.checkersGame.getSanPosition(piece.grid_position[0],piece.grid_position[1])
                 self.checkersGame.removeCheckerPiece(san_pos)
@@ -601,6 +606,10 @@ class BoardController(QFrame):
             if updated_board[4]:
                 print("removing piece", updated_board[4])
                 self.removePiece(updated_board[4])
+
+            if self.checkersGame.checkWinner(new_piece_model.getPlayerorOpp()) == True:
+                print("Winner is :", new_piece_model.getPlayerorOpp())
+                self.showWinner(new_piece_model.getPlayerorOpp())
 
         if event.button() == Qt.LeftButton and self.toggle_on==False:
             self.pressPos = event.pos().x()
