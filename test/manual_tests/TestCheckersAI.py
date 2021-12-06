@@ -451,13 +451,15 @@ class Opponent():
             return self.evaluate(gameEngine), gameEngine
 
         
+
         if max_player:
             max_evaluation = float('-inf')
             print("ai calculating MAX")
             best_move = None
             best_position = None
             old_position = None
-            
+            best_kill = []
+
             moves, updated_piece, old_piece, killed_pieces = self.getAllMoves(gameEngine, "Opponent", gameController)
             for idx, move in enumerate(moves):
                 new_board_state = self.miniMax(move, depth-1, False, gameController, best_kill)
@@ -471,7 +473,6 @@ class Opponent():
                             best_kill.append(killed_pieces[0])
                             print("best kills", best_kill)
 
-            print("BEST MAX MOVE IS ", best_position.getSanPosition())
             return max_evaluation, best_move, best_position, old_position, best_kill
 
         else: 
@@ -479,7 +480,7 @@ class Opponent():
             best_move = None
             best_position = None
             old_position = None
-            #best_kill = []
+            best_kill = []
             
             moves, updated_piece, old_piece,killed_pieces = self.getAllMoves(gameEngine, "Player", gameController)
             for idx, move in enumerate(moves): 
@@ -863,7 +864,7 @@ class BoardController(QFrame):
         """this is what happens if the board is selected"""            
         if self.playerTurn == False: 
             #min_evaluation, best_move, best_position, old_piece, killed_pieces
-            updated_board = self.opponent.miniMax(self.checkersGame, 2, "Opponent",self, best_kill=[])
+            updated_board = self.opponent.miniMax(self.checkersGame, 3, "Opponent",self, best_kill=[])
             new_piece = updated_board[2]
             old_piece = updated_board[3]
             new_piece_model = self.aiUpdatePiece(old_piece, new_piece)
