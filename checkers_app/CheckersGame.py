@@ -158,8 +158,7 @@ class CheckersGame():
 
     def findPotentialKills(self, row,col, player_or_opp, is_king):
         """find potential kill based on row and location fo player
-        returns a list of of row,col locations of potential kill
-        uses recursion"""
+        returns a list of of row,col location of the potential kill"""
         kill_moves = []
         killed_opponents = []
         moves_list = self.getMovesList(player_or_opp, is_king)
@@ -189,8 +188,7 @@ class CheckersGame():
             return False
 
     def doKills(self, current_san_position, new_san_position, player_or_opp, is_king):
-        """determines possible jumps and returns it to kill list as row and column index 
-        using recursion"""
+        """return location of the jump kill and the location of the piece that will be killed"""
         kill_moves = []
         killed_opponents = []
         curr_loc = self.getRowColPosition(current_san_position)
