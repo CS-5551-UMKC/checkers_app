@@ -6,7 +6,7 @@ import math
 from itertools import cycle
 import pickle
 #import cPickle
-
+from copy import deepcopy
 import CheckersGame
 
 from PyQt5.QtCore import (QSize, Qt,QRect)
@@ -16,7 +16,6 @@ from PyQt5.QtWidgets import (QApplication, QDialog, QFrame, QGridLayout,
                             QMainWindow, QPushButton,QSizePolicy, QMessageBox)
 
 from pprint import pprint
-
 
 class CheckerModel():
     """checker model """
@@ -47,18 +46,6 @@ class CheckerModel():
         """return Player or Opponent"""
         return self.player_or_opp
     
-class CheckerPixMap(QPixmap):
-    def __init__(self,image):
-        super(CheckerPixMap).__init__()
-        self.image = image
-
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            setattr(result, k, deepcopy(v, memo))
-        return result
 
 class Checker(QDialog):
     """might make this custom paint and determine if player or oppponent"""
@@ -167,11 +154,12 @@ class KillMovesButton(QPushButton):
         """returns list of victims if kill button is executed"""
         return self.victims
         
-class Opponent():
+class AIOpponent():
     """opponent class can be human or opponent"""
-    def __init__(self):
-        pass
-
+    def __init__(self, on_or_off, depth_level):
+        self.on_or_off = on_or_off #boolean
+        self.depth_level = depth_level
+        
     def evaluate(self, gameEngine):
         """evaluate the game state score"""
         opponents = gameEngine.getAllPiecesType("Opponent")
@@ -190,7 +178,7 @@ class Opponent():
                 kings.append(piece)
         return kings
 
-    def miniMax(self, gameEngine, depth, max_player, gameController):
+    def miniMax(self, gameEngine, depth, max_player, gameController, best_kill):
         """apply minimax with recursion"""
         if depth == 0 or gameEngine.checkWinner(max_player) == True:
             return self.evaluate(gameEngine), gameEngine
@@ -201,42 +189,44 @@ class Opponent():
             best_move = None
             best_position = None
             old_position = None
-            killed_pieces = None
+            best_kill = []
 
             moves, updated_piece, old_piece, killed_pieces = self.getAllMoves(gameEngine, "Opponent", gameController)
             for idx, move in enumerate(moves):
-                new_board_state = self.miniMax(move, depth-1, False, gameController)
+                new_board_state = self.miniMax(move, depth-1, False, gameController, best_kill)
                 max_evaluation = max(max_evaluation, new_board_state[0])
                 if max_evaluation == new_board_state[0]:
                     best_move = move #board
                     best_position = updated_piece[idx] # position
                     old_position = old_piece[idx]
-                    if killed_pieces:
-                        print("killed piece", killed_pieces)
-                        killed_pieces = killed_pieces
-            print("BEST MAX MOVE IS ", best_position.getSanPosition())
-            return max_evaluation, best_move, best_position, old_position, killed_pieces
+                    if killed_pieces: 
+                        if killed_pieces[0] not in best_kill:
+                            best_kill.append(killed_pieces[0])
+                            #print("best kills", best_kill)
+
+            return max_evaluation, best_move, best_position, old_position, best_kill
 
         else: 
             min_evaluation = float('inf')
             best_move = None
             best_position = None
             old_position = None
-            killed_pieces = None
+            best_kill = []
             
             moves, updated_piece, old_piece,killed_pieces = self.getAllMoves(gameEngine, "Player", gameController)
             for idx, move in enumerate(moves): 
-                new_board_state = self.miniMax(move, depth-1, True, gameController)
+                new_board_state = self.miniMax(move, depth-1, True, gameController, best_kill)
                 min_evaluation = min(min_evaluation, new_board_state[0])
                 if min_evaluation == new_board_state[0]:
                     best_move = move #board
                     best_position = updated_piece[idx] #position
                     old_position = old_piece[idx]
                     if killed_pieces:
-                        print("killed piece", killed_pieces)
-                        killed_pieces = killed_pieces
+                        if killed_pieces[0] not in best_kill:
+                            best_kill.append(killed_pieces[0])
+                            #print("best kills", best_kill)
 
-            print("BEST MIN MOVE IS ", best_position.getSanPosition())
+            #print("BEST MIN MOVE IS ", best_position.getSanPosition())
             return min_evaluation, best_move, best_position, old_piece, killed_pieces
             
     def getAllMoves(self, gameEngine, player_or_opp, gameController):
@@ -255,8 +245,6 @@ class Opponent():
                  player_or_opp, piece.isKing())
             if kill_moves:
                 for idx, kill_move in enumerate(kill_moves):
-                    print("checking kills for ", kill_move)
-                    print("opponent piece at", killed_opps)
                     temp_board = deepcopy(gameEngine)
                     checkers_position = temp_board.getCheckersPosition()
                     temp_piece = checkers_position[current_san]
@@ -282,7 +270,8 @@ class Opponent():
             """simulate a simple jump"""
             updated_checker, updated_checker_model = gameController.updatePiece(temp_piece, move[0], move[1])
             if updated_checker.isKing() == True:
-                print("Have a king", updated_checker_model.getSanPosition())            #print("new potential position: ", updated_checker_model.getSanPosition())
+                pass
+                #print("Have a king", updated_checker_model.getSanPosition())            #print("new potential position: ", updated_checker_model.getSanPosition())
             temp_board.updateCheckerPosition(updated_checker_model, temp_piece)
 
             return temp_board,  updated_checker_model
@@ -290,7 +279,7 @@ class Opponent():
     def simulatKillMove(self, temp_piece, kill_move, victim_list,temp_board, gameController):
             """simulate a kill"""
             updated_checker, updated_checker_model = gameController.updatePiece(temp_piece, kill_move[0], kill_move[1])
-            print("victims at ", victim_list)
+            #print("victims at ", victim_list)
             temp_board.removeCheckerPiece(temp_board.getSanPosition(victim_list[0][0], victim_list[0][1]))
             temp_board.updateCheckerPosition(updated_checker_model, temp_piece)
 
@@ -336,7 +325,7 @@ class BoardController(QFrame):
         self.playerTurn = True
         self.toggle_on = False
         """need to figure out a better way to format this"""
-        self.opponent = Opponent()
+        self.opponent = AIOpponent(True, 3)
 
     def __deepcopy__(self, memo):
         cls = self.__class__
@@ -465,11 +454,7 @@ class BoardController(QFrame):
                 updated_checker = Checker(self, san_position, new_row_col_position, "Opponent", new_piece_model.isKing())
                 self.checkersGame.updateCheckerPosition(new_piece_model, old_piece)
                 print("moving ", old_piece.getSanPosition(), "to ", updated_checker.getSanPosition())
-                # update the position in the GUI 
                 self.layout.addWidget(updated_checker, new_row_col_position[0], new_row_col_position[1]) 
-                #set toggle on button to false since we made a move 
-                self.toggle_on = False  
-                #self.switchTurns()
 
     def movePiece(self, piece, curr_row, curr_col):
         """ get the location button selected """
@@ -559,20 +544,16 @@ class BoardController(QFrame):
     def removePiece(self, piece_removed_list):
         """removed pieces from board based on pieced_removed
         piece_removed is a list of row,col coordinates"""
-        if len(piece_removed_list) > 1:
-            dead_piece = piece_removed_list[-1]
-        else:
-            dead_piece = piece_removed_list
-
         piece_list = self.findChildren(Checker)
         for piece in piece_list:
-            if piece.grid_position in dead_piece:
+            if piece.grid_position == piece_removed_list or piece.grid_position in piece_removed_list:
+                print("Removed piece", piece_removed_list)
                 #remove from GUI and remove from checkers position game engine
                 san_pos = self.checkersGame.getSanPosition(piece.grid_position[0],piece.grid_position[1])
                 self.checkersGame.removeCheckerPiece(san_pos)
+                print("Removed piece", san_pos)
                 piece.setParent(None)
-                print("Removed piece")
-
+                
     def switchTurns(self):
         """switch turns to either opponent or player"""
         self.playerTurn = not self.playerTurn
@@ -591,27 +572,52 @@ class BoardController(QFrame):
             self.deleteMoves(KillMovesButton)
             self.deleteMoves(MovesButton) 
 
+
+    
+
     def mousePressEvent(self, event):
         """this is what happens if the board is selected"""            
-        if self.playerTurn == False: 
+        while self.playerTurn == False: 
             #min_evaluation, best_move, best_position, old_piece, killed_pieces
-            updated_board = self.opponent.miniMax(self.checkersGame, 2, "Opponent",self)
+            updated_board = self.opponent.miniMax(self.checkersGame, 2, "Opponent",self.depth, best_kill=[])
             new_piece = updated_board[2]
             old_piece = updated_board[3]
-            print("old piece position", old_piece.isKing())
-            print("new piece position", new_piece.getSanPosition())
             new_piece_model = self.aiUpdatePiece(old_piece, new_piece)
-            self.aiMove(old_piece, new_piece_model)
-            print("removing piece", updated_board[4])
-            if updated_board[4]:
-                print("removing piece", updated_board[4])
-                self.removePiece(updated_board[4])
 
+            #if the ai is making a capture
+            if updated_board[4][::-1]:
+                print("kills are", updated_board[4][::-1])
+                for kill in updated_board[4][::-1]:
+                    manhattan_distance = self.checkersGame.findManhattanDistance(\
+                        old_piece.getGridPosition(), kill)
+                    jump_loc = [kill[0]+manhattan_distance[0], kill[1]+manhattan_distance[1]]
+                    new_jumped_piece, new_jumped_piece_model = self.updatePiece(new_piece_model, \
+                        jump_loc[0], jump_loc[1])
+                    print("new position is ", new_jumped_piece_model.getSanPosition())
+                    curr_row_col = new_jumped_piece_model.getGridPosition()
+                    kill_moves, opps = self.checkersGame.findPotentialKills(curr_row_col[0], curr_row_col[1], \
+                    "Opponent", new_jumped_piece_model.isKing())
+                    self.removePiece(kill)
+                    self.aiMove(old_piece, new_jumped_piece_model)
+
+                    if not kill_moves:
+                        print("no more jumps", kill_moves)
+                        self.removePiece(kill)
+                        self.aiMove(old_piece, new_jumped_piece_model)
+                        self.switchTurns()
+                    else:
+                        print("we have a kill" , kill_moves)
+                        
+            else:
+                self.aiMove(old_piece, new_piece_model)
+                self.switchTurns()
+                            
             if self.checkersGame.checkWinner(new_piece_model.getPlayerorOpp()) == True:
                 print("Winner is :", new_piece_model.getPlayerorOpp())
                 self.showWinner(new_piece_model.getPlayerorOpp())
 
-        if event.button() == Qt.LeftButton and self.toggle_on==False:
+        #if event.button() == Qt.LeftButton and self.toggle_on==False:
+        if self.playerTurn == True and self.toggle_on == False:
             self.pressPos = event.pos().x()
             curr_row,curr_col = self.getRowColFromPixel(event.pos().x(), y = event.pos().y())
             san_location = self.checkersGame.row_col_mapping[curr_row,curr_col]
@@ -630,7 +636,11 @@ class BoardController(QFrame):
                         #show legal moves in the game
                         self.showMoves(moves_row_col,piece, curr_row, curr_col)
                         self.showKills(kill_moves, opponent_locs, piece, curr_row, curr_col)
-                        self.toggle_on = True        
+                        self.toggle_on = True
+                    else:
+                        print("Winner is :", new_piece_model.getPlayerorOpp())
+                        self.showWinner(new_piece_model.getPlayerorOpp())
+
         else:
             self.pressPos = event.pos().x()
             x = event.pos().x()

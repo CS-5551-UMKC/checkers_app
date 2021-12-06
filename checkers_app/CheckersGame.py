@@ -162,15 +162,15 @@ class CheckersGame():
         kill_moves = []
         killed_opponents = []
         moves_list = self.getMovesList(player_or_opp, is_king)
-
+        
         for move in moves_list:
             possible_move = [row+move[0], col+move[1]]
             current_san_position = self.getSanPosition(row,col)
-            print("potential kill san position", current_san_position)
             new_san_position = self.getSanPosition(possible_move[0], possible_move[1])
 
             #check for potential kills
             if self.checkPotentialKills(new_san_position, player_or_opp):
+                #print("potential kills", new_san_position)
                 kills, killed_opps= self.doKills(current_san_position, new_san_position, player_or_opp, is_king)
                 kill_moves.extend(kills)
                 killed_opponents.extend(killed_opps)
@@ -188,12 +188,12 @@ class CheckersGame():
         else:
             return False
 
-    def doKills(self, current_san_position, opponent_san_loc, player_or_opp, is_king):
+    def doKills(self, current_san_position, new_san_position, player_or_opp, is_king):
         """return location of the jump kill and the location of the piece that will be killed"""
         kill_moves = []
         killed_opponents = []
         curr_loc = self.getRowColPosition(current_san_position)
-        opp_piece_loc = self.checkers_position[opponent_san_loc].getGridPosition()
+        opp_piece_loc = self.checkers_position[new_san_position].getGridPosition()
         manhattan_distance = self.findManhattanDistance(curr_loc, opp_piece_loc)
         jump_loc = [opp_piece_loc[0]+manhattan_distance[0],opp_piece_loc[1]+manhattan_distance[1]]
         

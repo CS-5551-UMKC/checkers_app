@@ -450,8 +450,6 @@ class Opponent():
         if depth == 0 or gameEngine.checkWinner(max_player) == True:
             return self.evaluate(gameEngine), gameEngine
 
-        
-
         if max_player:
             max_evaluation = float('-inf')
             print("ai calculating MAX")
@@ -903,8 +901,6 @@ class BoardController(QFrame):
             if self.checkersGame.checkWinner(new_piece_model.getPlayerorOpp()) == True:
                 print("Winner is :", new_piece_model.getPlayerorOpp())
                 self.showWinner(new_piece_model.getPlayerorOpp())
-
-            #self.switchTurns()
 
         #if event.button() == Qt.LeftButton and self.toggle_on==False:
         if self.playerTurn == True and self.toggle_on == False:
