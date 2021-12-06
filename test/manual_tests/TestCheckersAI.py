@@ -862,7 +862,7 @@ class BoardController(QFrame):
 
     def mousePressEvent(self, event):
         """this is what happens if the board is selected"""            
-        if self.playerTurn == False: 
+        while self.playerTurn == False: 
             #min_evaluation, best_move, best_position, old_piece, killed_pieces
             updated_board = self.opponent.miniMax(self.checkersGame, 3, "Opponent",self, best_kill=[])
             new_piece = updated_board[2]
@@ -895,6 +895,7 @@ class BoardController(QFrame):
                         self.switchTurns()
                     else:
                         print("we have a kill" , kill_moves)
+                        
             else:
                 self.aiMove(old_piece, new_piece_model)
                 self.switchTurns()
@@ -905,7 +906,8 @@ class BoardController(QFrame):
 
             #self.switchTurns()
 
-        if event.button() == Qt.LeftButton and self.toggle_on==False:
+        #if event.button() == Qt.LeftButton and self.toggle_on==False:
+        if self.playerTurn == True and self.toggle_on == False:
             self.pressPos = event.pos().x()
             curr_row,curr_col = self.getRowColFromPixel(event.pos().x(), y = event.pos().y())
             san_location = self.checkersGame.row_col_mapping[curr_row,curr_col]
