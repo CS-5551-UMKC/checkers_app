@@ -111,7 +111,6 @@ class CheckersGame():
         and updating the piece """
         old_san_position = old_checker.getSanPosition()
         new_san_position = new_checker.getSanPosition()
-        #self.checkers_position.pop(old_san_position)
         self.removeCheckerPiece(old_san_position) 
         self.checkers_position[new_san_position] = new_checker 
 
@@ -170,7 +169,6 @@ class CheckersGame():
 
             #check for potential kills
             if self.checkPotentialKills(new_san_position, player_or_opp):
-                #print("potential kills", new_san_position)
                 kills, killed_opps= self.doKills(current_san_position, new_san_position, player_or_opp, is_king)
                 kill_moves.extend(kills)
                 killed_opponents.extend(killed_opps)
