@@ -589,8 +589,10 @@ class BoardController(QFrame):
         self.playerTurn = True
         self.toggle_on = False
 
-        """need to figure out a better way to format this"""
+        #AC 13.1 - Game starts with human opponent if the line below contains False
+        #AC 13.2 - Game starts with AI opponent if line below contains True
         self.aiOpponent = Opponent(True)
+        
 
     def __deepcopy__(self, memo):
         cls = self.__class__
