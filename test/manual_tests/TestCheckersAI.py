@@ -1,6 +1,7 @@
 from abc import abstractproperty
 from copy import deepcopy
 
+import unittest
 import sys
 import math 
 from itertools import cycle
@@ -589,8 +590,6 @@ class BoardController(QFrame):
         self.playerTurn = True
         self.toggle_on = False
 
-        #AC 13.1 - Game starts with human opponent if the line below contains False
-        #AC 13.2 - Game starts with AI opponent if line below contains True
         self.aiOpponent = Opponent(True)
         
 
@@ -939,6 +938,17 @@ class CheckersAPP(QMainWindow):
         self.table = QTableWidget(1, 2)
         layout.addWidget(self.table)
 
+class TestBoardSize(unittest.TestCase):
+    #AC 13.1 - Game starts with human opponent | Assert aiOpponent is False
+    def test_human_opp(self):
+        boardTest = BoardController()
+        boardTest.aiOpponent.on_or_off = False
+        self.assertTrue(boardTest.aiOpponent.on_or_off, False)
+
+    #AC 13.2 - Game starts with AI opponent | Assert aiOpponent is True
+    def test_computer_opp(self):
+        boardTest = BoardController()
+        self.assertTrue(boardTest.aiOpponent.on_or_off, True)
 
 if __name__ =='__main__':
     app = QApplication(sys.argv)
