@@ -938,7 +938,7 @@ class CheckersAPP(QMainWindow):
         self.table = QTableWidget(1, 2)
         layout.addWidget(self.table)
 
-class TestBoardSize(unittest.TestCase):
+class TestOpponentType(unittest.TestCase):
     #AC 13.1 - Game starts with human opponent | Assert aiOpponent is False
     def test_human_opp(self):
         boardTest = BoardController()
