@@ -234,8 +234,8 @@ class Opponent():
                     old_position = old_piece[idx]
                     if killed_pieces:
                         if killed_pieces[0] not in best_kill:
-                            pass
-                            #best_kill.append(killed_pieces[0])
+                            #pass
+                            best_kill.append(killed_pieces[0])
 
             #print("BEST MIN MOVE IS ", best_position.getSanPosition())
             return min_evaluation, best_move, best_position, old_piece, killed_pieces
@@ -573,7 +573,7 @@ class BoardController(QFrame):
         for button in moves_button:
             button.setParent(None)
 
-    def turn_off_shown_moves(self, san_location):
+    def turnOffShownMoves(self, san_location):
         """toggle off the buttons selected"""
         if self.checkersGame.checkCheckerExists(san_location):
             self.toggle_on = False
@@ -600,8 +600,8 @@ class BoardController(QFrame):
                         new_jumped_piece, new_jumped_piece_model = self.updatePiece(new_piece_model, \
                             jump_loc[0], jump_loc[1])
                         
-                        ##updated_board = self.opponent.miniMax(self.checkersGame, 2, "Opponent",self)
                         print("new position is ", new_jumped_piece_model.getSanPosition())
+                        print("new position is ", new_jumped_piece_model.getGridPosition())
                         curr_row_col = new_jumped_piece_model.getGridPosition()
                         kill_moves, opps = self.checkersGame.findPotentialKills(curr_row_col[0], curr_row_col[1], \
                         "Opponent", new_jumped_piece_model.isKing())
@@ -610,15 +610,16 @@ class BoardController(QFrame):
 
                         if not kill_moves:
                             print("no more jumps", kill_moves)
-                            self.removePiece(kill)
-                            self.aiMove(old_piece, new_jumped_piece_model)
+                            if self.checkersGame.checkInBounds(new_jumped_piece_model.getGridPosition()):
+                                self.removePiece(kill)
+                                self.aiMove(old_piece, new_jumped_piece_model)
                             self.switchTurns()
                         else:
                             print("we have a kill" , kill_moves)
                             
                 else:
                     self.aiMove(old_piece, new_piece_model)
-                    self.switchTurns()
+                    self.switchTurns() 
                                 
                 if self.checkersGame.checkWinner(new_piece_model.getPlayerorOpp()) == True:
                     print("Winner is :", new_piece_model.getPlayerorOpp())
@@ -651,7 +652,7 @@ class BoardController(QFrame):
             y = event.pos().y()
             curr_row,curr_col = self.getRowColFromPixel(x,y)
             san_location = self.checkersGame.row_col_mapping[curr_row,curr_col]
-            self.turn_off_shown_moves(san_location)
+            self.turnOffShownMoves(san_location)
 
 
 class CheckersAPP(QMainWindow):
